@@ -30,7 +30,7 @@ Projeto local de automação para apoiar o acesso ao VITAI HIAM e a exportação
 3. Abra `chrome://extensions`.
 4. Ative **Modo do desenvolvedor**.
 5. Clique em **Carregar sem compactação** e selecione a pasta extraída.
-6. Abra a página de controle publicada no Vercel ou abra o `index.html` localmente.
+6. Publique o `index.html` no Vercel e abra a URL publicada. A ponte da extensão foi configurada para a página hospedada em um domínio `*.vercel.app`.
 
 ## Próxima etapa
 
