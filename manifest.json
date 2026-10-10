@@ -1,29 +1,14 @@
 {
   "manifest_version": 3,
   "name": "Automação VITAI HIAM",
-  "version": "0.1.0",
-  "description": "Acesso ao VITAI HIAM e preparação para exportação de relatórios.",
-  "permissions": [
-    "tabs",
-    "storage"
-  ],
-  "host_permissions": [
-    "https://hiam.vitai.care/*",
-    "https://*.vercel.app/*"
-  ],
-  "background": {
-    "service_worker": "background.js"
-  },
-  "content_scripts": [
-    {
-      "matches": [
-        "https://hiam.vitai.care/*",
-        "https://*.vercel.app/*"
-      ],
-      "js": [
-        "content.js"
-      ],
-      "run_at": "document_idle"
-    }
-  ]
+  "version": "0.2.0",
+  "description": "Automação de teste para exportar relatórios do VITAI HIAM.",
+  "permissions": ["tabs", "storage", "scripting", "downloads"],
+  "host_permissions": ["https://hiam.vitai.care/*", "https://*.vercel.app/*"],
+  "background": { "service_worker": "background.js" },
+  "content_scripts": [{
+    "matches": ["https://hiam.vitai.care/*", "https://*.vercel.app/*"],
+    "js": ["content.js"],
+    "run_at": "document_idle"
+  }]
 }
