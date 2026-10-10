@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#123b32">
+  <title>Automação VITAI HIAM</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --verde: #174b3e;
+      --verde-2: #216653;
+      --fundo: #f3f5f2;
+      --texto: #1c2924;
+      --muted: #62716a;
+      --borda: #dbe2dc;
+      --branco: #fff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Arial, sans-serif;
+      color: var(--texto);
+      background: var(--fundo);
+      min-height: 100vh;
+    }
+    header {
+      background: var(--verde);
+      color: white;
+      padding: 28px 20px 34px;
+    }
+    .topo, main { width: min(920px, calc(100% - 32px)); margin: 0 auto; }
+    .marca { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; opacity: .8; }
+    h1 { margin: 10px 0 8px; font-size: clamp(26px, 4vw, 38px); letter-spacing: -.03em; }
+    header p { margin: 0; max-width: 640px; line-height: 1.55; color: #e0eee8; }
+    main { padding: 24px 0 44px; }
+    .aviso {
+      border: 1px solid #e7d7a8; background: #fff9e9; color: #65501c;
+      border-radius: 12px; padding: 13px 15px; line-height: 1.5; margin-bottom: 18px;
+      font-size: 14px;
+    }
+    .grade { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    .card {
+      background: var(--branco); border: 1px solid var(--borda); border-radius: 16px;
+      padding: 21px; box-shadow: 0 5px 18px #203b2b0a;
+    }
+    .card h2 { margin: 0 0 8px; font-size: 18px; }
+    .card p { margin: 0 0 16px; color: var(--muted); font-size: 14px; line-height: 1.5; }
+    button, .link {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      border: 0; border-radius: 10px; padding: 12px 15px; min-height: 44px;
+      font: inherit; font-weight: 650; text-decoration: none; cursor: pointer;
+      background: var(--verde); color: white;
+    }
+    button:hover, .link:hover { background: var(--verde-2); }
+    button.secundario { background: #e8efeb; color: var(--verde); }
+    button.secundario:hover { background: #dce8e1; }
+    button:disabled { cursor: not-allowed; opacity: .55; }
+    .linha { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    .status { font-size: 13px; color: var(--muted); margin-top: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+    .relatorio { display: flex; flex-direction: column; min-height: 190px; }
+    .relatorio .rodape { margin-top: auto; }
+    .tag {
+      display: inline-block; width: fit-content; padding: 5px 8px; border-radius: 999px;
+      font-size: 11px; font-weight: 700; background: #edf1ee; color: #52645b;
+      margin-bottom: 12px;
+    }
+    footer { text-align: center; color: var(--muted); font-size: 12px; padding: 4px 16px 28px; }
+    @media (max-width: 650px) { .grade { grid-template-columns: 1fr; } .card { padding: 18px; } }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="topo">
+      <div class="marca">Ferramenta interna · HIAM</div>
+      <h1>Automação VITAI</h1>
+      <p>Acesso ao sistema e preparação dos relatórios utilizados pelo SAME Laudos.</p>
+    </div>
+  </header>
+
+  <main>
+    <div class="aviso">
+      <strong>Versão inicial 0.1.0:</strong> o acesso ao VITAI está preparado. A automação dos relatórios será ativada depois de mapearmos os menus e filtros reais do sistema.
+      Não informe sua senha nesta página: faça o login manualmente no site oficial.
+    </div>
+
+    <div class="grade">
+      <section class="card">
+        <h2>1. Acessar o VITAI</h2>
+        <p>Abre o sistema oficial em outra aba. Digite usuário e senha diretamente no VITAI e conclua o login normalmente.</p>
+        <button id="btnAbrir">Abrir VITAI HIAM ↗</button>
+        <div id="statusAcesso" class="status" role="status" aria-live="polite">Pronto para abrir o sistema.</div>
+      </section>
+
+      <section class="card">
+        <h2>2. Pasta dos relatórios</h2>
+        <p>Selecione a pasta onde os arquivos Excel deverão ser gravados. A permissão é solicitada pelo Chrome.</p>
+        <div class="linha">
+          <button id="btnPasta" class="secundario">📁 Escolher pasta</button>
+        </div>
+        <div id="statusPasta" class="status" role="status" aria-live="polite">Nenhuma pasta selecionada nesta página.</div>
+      </section>
+
+      <section class="card relatorio">
+        <span class="tag">RELATÓRIO 01</span>
+        <h2>Emergência — pacientes registrados</h2>
+        <p>Exportação Excel do relatório de pacientes registrados na emergência.</p>
+        <div class="rodape">
+          <button class="btnRelatorio" data-relatorio="emergencia-pacientes-registrados" disabled>Exportar Excel</button>
+          <div class="status">Será habilitado após mapearmos o relatório no VITAI.</div>
+        </div>
+      </section>
+
+      <section class="card relatorio">
+        <span class="tag">RELATÓRIO 02</span>
+        <h2>Internação — altas</h2>
+        <p>Exportação Excel do relatório de altas de internação.</p>
+        <div class="rodape">
+          <button class="btnRelatorio" data-relatorio="internacao-altas" disabled>Exportar Excel</button>
+          <div class="status">Será habilitado após mapearmos o relatório no VITAI.</div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer>Automação VITAI HIAM · versão 0.1.0 · uso interno autorizado</footer>
+
+  <script>
+    const ORIGEM = "AUTOMACAO_VITAI_HIAM";
+    const statusAcesso = document.getElementById("statusAcesso");
+    const statusPasta = document.getElementById("statusPasta");
+    const btnAbrir = document.getElementById("btnAbrir");
+    const btnPasta = document.getElementById("btnPasta");
+
+    btnAbrir.addEventListener("click", () => {
+      statusAcesso.textContent = "Abrindo o VITAI...";
+      window.postMessage({ origem: ORIGEM, type: "VITAI_ABRIR_SISTEMA" }, location.origin);
+      // Fallback seguro: o link oficial também é aberto diretamente pelo navegador.
+      window.open("https://hiam.vitai.care/vitai/pages/login.do", "_blank", "noopener");
+    });
+
+    window.addEventListener("message", (event) => {
+      if (event.source !== window || !event.data || event.data.origem !== "EXTENSAO_VITAI_HIAM") return;
+      const resposta = event.data.resposta || {};
+      if (event.data.type === "VITAI_ABRIR_SISTEMA_RESPOSTA") {
+        statusAcesso.textContent = resposta.ok ? "Aba do VITAI aberta. Faça o login manualmente." : "O site foi aberto pelo navegador. Se necessário, verifique se a extensão está carregada.";
+      }
+    });
+
+    let pastaSelecionada = null;
+    const DB_NOME = "AutomacaoVITAIHIAM";
+    const DB_STORE = "configuracoes";
+    const DB_CHAVE = "pastaRelatorios";
+
+    function abrirBanco() {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open(DB_NOME, 1);
+        req.onupgradeneeded = () => {
+          if (!req.result.objectStoreNames.contains(DB_STORE)) req.result.createObjectStore(DB_STORE);
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    async function guardarHandle(handle) {
+      const db = await abrirBanco();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(DB_STORE, "readwrite");
+        tx.objectStore(DB_STORE).put(handle, DB_CHAVE);
+        tx.oncomplete = () => { db.close(); resolve(); };
+        tx.onerror = () => { db.close(); reject(tx.error); };
+      });
+    }
+
+    async function lerHandle() {
+      const db = await abrirBanco();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(DB_STORE, "readonly");
+        const req = tx.objectStore(DB_STORE).get(DB_CHAVE);
+        req.onsuccess = () => { const valor = req.result || null; db.close(); resolve(valor); };
+        req.onerror = () => { db.close(); reject(req.error); };
+      });
+    }
+
+    async function verificarPermissao(handle, solicitar) {
+      const opcoes = { mode: "readwrite" };
+      let permissao = await handle.queryPermission(opcoes);
+      if (permissao !== "granted" && solicitar) permissao = await handle.requestPermission(opcoes);
+      return permissao === "granted";
+    }
+
+    btnPasta.addEventListener("click", async () => {
+      try {
+        if (!("showDirectoryPicker" in window)) {
+          statusPasta.textContent = "Este navegador não oferece seleção de pasta. Use uma versão atual do Chrome.";
+          return;
+        }
+        const handle = await window.showDirectoryPicker({ mode: "readwrite" });
+        if (!(await verificarPermissao(handle, true))) {
+          statusPasta.textContent = "A permissão de gravação não foi concedida.";
+          return;
+        }
+        await guardarHandle(handle);
+        pastaSelecionada = handle;
+        statusPasta.textContent = "Pasta selecionada: " + handle.name + ". A exportação será ativada quando os relatórios forem configurados.";
+      } catch (erro) {
+        if (erro.name === "AbortError") return;
+        statusPasta.textContent = "Não foi possível selecionar a pasta: " + erro.message;
+      }
+    });
+
+    (async () => {
+      try {
+        pastaSelecionada = await lerHandle();
+        if (pastaSelecionada) {
+          const ok = await verificarPermissao(pastaSelecionada, false);
+          statusPasta.textContent = ok
+            ? "Pasta cadastrada: " + pastaSelecionada.name
+            : "Pasta cadastrada: " + pastaSelecionada.name + ". Clique em Escolher pasta para autorizar novamente.";
+        }
+      } catch (erro) {
+        statusPasta.textContent = "Selecione a pasta de destino para começar.";
+      }
+    })();
+  </script>
+</body>
+</html>
