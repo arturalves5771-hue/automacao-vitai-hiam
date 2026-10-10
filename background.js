@@ -105,7 +105,10 @@ async function executarRelatorio(message, sendResponse) {
             return { ok: false, erro: "A tela não disponibilizou os parâmetros do relatório. Atualize a página do VITAI." };
           }
 
-          const parametrosAtuais = window.getParametros(args.datasourceId);
+          const leitura = grade.dataSource?.transport?.options?.read;
+          const parametrosAtuais = typeof leitura?.data === "function"
+            ? leitura.data()
+            : (typeof leitura?.data === "object" ? leitura.data : null);
           const datasourceAtual = String(parametrosAtuais?.datasourceId || "");
           if (datasourceAtual !== String(args.datasourceId)) {
             return {
