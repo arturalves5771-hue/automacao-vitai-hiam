@@ -56,6 +56,7 @@
     button.secundario { background: #e8efeb; color: var(--verde); }
     button.secundario:hover { background: #dce8e1; }
     button:disabled { cursor: not-allowed; opacity: .55; }
+    input[type="date"] { margin-top: 6px; padding: 10px 11px; border: 1px solid var(--borda); border-radius: 9px; font: inherit; color: var(--texto); background: #fff; }
     .linha { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
     .status { font-size: 13px; color: var(--muted); margin-top: 12px; line-height: 1.5; overflow-wrap: anywhere; }
     .relatorio { display: flex; flex-direction: column; min-height: 190px; }
@@ -80,10 +81,19 @@
 
   <main>
     <div class="aviso">
-      <strong>Versão inicial 0.1.0:</strong> o acesso ao VITAI está preparado. A automação dos relatórios será ativada depois de mapearmos os menus e filtros reais do sistema.
+      <strong>Versão de teste 0.2.0:</strong> abra o relatório desejado no VITAI antes de clicar em Exportar. A extensão aplica o período informado e aciona a exportação nativa. Execute um relatório por vez.
       Não informe sua senha nesta página: faça o login manualmente no site oficial.
     </div>
 
+    
+    <section class="card" style="margin-bottom:16px">
+      <h2>Período dos relatórios</h2>
+      <p>O período será aplicado do primeiro dia às 00:00:00 até o último dia às 23:59:59.</p>
+      <div class="linha">
+        <label>Data inicial<br><input id="dataInicial" type="date" required></label>
+        <label>Data final<br><input id="dataFinal" type="date" required></label>
+      </div>
+    </section>
     <div class="grade">
       <section class="card">
         <h2>1. Acessar o VITAI</h2>
@@ -106,8 +116,8 @@
         <h2>Emergência — pacientes registrados</h2>
         <p>Exportação Excel do relatório de pacientes registrados na emergência.</p>
         <div class="rodape">
-          <button class="btnRelatorio" data-relatorio="emergencia-pacientes-registrados" disabled>Exportar Excel</button>
-          <div class="status">Será habilitado após mapearmos o relatório no VITAI.</div>
+          <button class="btnRelatorio" data-relatorio="emergencia-pacientes-registrados">Exportar Excel</button>
+          <div id="statusEmergencia" class="status" role="status" aria-live="polite">Abra o relatório de Emergência no VITAI antes de executar.</div>
         </div>
       </section>
 
@@ -116,14 +126,14 @@
         <h2>Internação — altas</h2>
         <p>Exportação Excel do relatório de altas de internação.</p>
         <div class="rodape">
-          <button class="btnRelatorio" data-relatorio="internacao-altas" disabled>Exportar Excel</button>
-          <div class="status">Será habilitado após mapearmos o relatório no VITAI.</div>
+          <button class="btnRelatorio" data-relatorio="internacao-altas">Exportar Excel</button>
+          <div id="statusInternacao" class="status" role="status" aria-live="polite">Abra o relatório de Internação — altas no VITAI antes de executar.</div>
         </div>
       </section>
     </div>
   </main>
 
-  <footer>Automação VITAI HIAM · versão 0.1.0 · uso interno autorizado</footer>
+  <footer>Automação VITAI HIAM · versão 0.2.0 · uso interno autorizado</footer>
 
   <script>
     const ORIGEM = "AUTOMACAO_VITAI_HIAM";
@@ -131,6 +141,18 @@
     const statusPasta = document.getElementById("statusPasta");
     const btnAbrir = document.getElementById("btnAbrir");
     const btnPasta = document.getElementById("btnPasta");
+    const dataInicial = document.getElementById("dataInicial");
+    const dataFinal = document.getElementById("dataFinal");
+    const statusPorRelatorio = {
+      "emergencia-pacientes-registrados": document.getElementById("statusEmergencia"),
+      "internacao-altas": document.getElementById("statusInternacao")
+    };
+    function dataLocalISO(data) {
+      return data.getFullYear() + "-" + String(data.getMonth() + 1).padStart(2, "0") + "-" + String(data.getDate()).padStart(2, "0");
+    }
+    const hoje = dataLocalISO(new Date());
+    dataInicial.value = hoje;
+    dataFinal.value = hoje;
 
     btnAbrir.addEventListener("click", () => {
       statusAcesso.textContent = "Abrindo o VITAI...";
@@ -146,6 +168,33 @@
       if (event.data.type === "VITAI_ABRIR_SISTEMA_RESPOSTA") {
         statusAcesso.textContent = resposta.ok ? "Aba do VITAI aberta. Faça o login manualmente." : "O site foi aberto pelo navegador. Se necessário, verifique se a extensão está carregada.";
       }
+      if (event.data.type === "VITAI_EXECUTAR_RELATORIO_RESPOSTA") {
+        const alvo = statusPorRelatorio[event.data.relatorio];
+        if (alvo) {
+          alvo.textContent = resposta.ok
+            ? (resposta.mensagem || "Exportação acionada.") + " Arquivo esperado: " + (resposta.nomeArquivo || "Excel") + ". " + (resposta.observacao || "")
+            : "Não foi possível executar: " + (resposta.erro || "erro desconhecido");
+        }
+      }
+    });
+
+    document.querySelectorAll(".btnRelatorio").forEach((botao) => {
+      botao.addEventListener("click", () => {
+        const relatorio = botao.dataset.relatorio;
+        const alvo = statusPorRelatorio[relatorio];
+        const inicio = dataInicial.value;
+        const fim = dataFinal.value;
+        if (!inicio || !fim) { alvo.textContent = "Informe a data inicial e a data final."; return; }
+        if (inicio > fim) { alvo.textContent = "A data inicial não pode ser posterior à data final."; return; }
+        alvo.textContent = "Enviando comando à extensão e consultando o relatório...";
+        window.postMessage({
+          origem: ORIGEM,
+          type: "VITAI_EXECUTAR_RELATORIO",
+          relatorio,
+          dataInicial: inicio,
+          dataFinal: fim
+        }, location.origin);
+      });
     });
 
     let pastaSelecionada = null;
