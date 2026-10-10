@@ -134,9 +134,10 @@
 
     btnAbrir.addEventListener("click", () => {
       statusAcesso.textContent = "Abrindo o VITAI...";
-      window.postMessage({ origem: ORIGEM, type: "VITAI_ABRIR_SISTEMA" }, location.origin);
-      // Fallback seguro: o link oficial também é aberto diretamente pelo navegador.
+      // O acesso ao sistema é aberto diretamente pelo navegador.
+      // A extensão registra a aba quando o content script carrega no VITAI.
       window.open("https://hiam.vitai.care/vitai/pages/login.do", "_blank", "noopener");
+      statusAcesso.textContent = "Aba do VITAI aberta. Faça o login manualmente.";
     });
 
     window.addEventListener("message", (event) => {
