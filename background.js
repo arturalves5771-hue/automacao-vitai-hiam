@@ -145,20 +145,7 @@ async function loginEExecutarAmbos(message, sendResponse) {
         else if (form) form.requestSubmit ? form.requestSubmit() : form.submit();
         else return { ok: false, erro: "Preenchi os campos, mas não encontrei o botão/formulário para entrar no VITAI." };
 
-        const inicio = Date.now();
-        while (Date.now() - inicio < 30000) {
-          await pausa(300);
-          const senhaAindaVisivel = document.querySelector('input[type="password"]');
-          const mensagemErro = Array.from(document.querySelectorAll(".error, .erro, .alert-danger, [role=alert]"))
-            .map(el => (el.innerText || "").trim()).filter(Boolean).join(" ");
-          if (mensagemErro && /senha|usu.rio|inv.lid|incorret|falha|erro/i.test(mensagemErro)) {
-            return { ok: false, erro: "O VITAI apresentou uma mensagem de login: " + mensagemErro.slice(0, 240) };
-          }
-          if (!senhaAindaVisivel || document.querySelector("#treeview") || typeof window.openWindow === "function") {
-            return { ok: true, mensagem: "Login enviado ao VITAI." };
-          }
-        }
-        return { ok: false, erro: "O VITAI não confirmou a entrada em 30 segundos. Verifique usuário, senha ou a tela de login." };
+        return { ok: true, mensagem: "Credenciais preenchidas e envio do login acionado." };
       }
     });
     const login = resultadoLogin && resultadoLogin[0] ? resultadoLogin[0].result : null;
@@ -166,8 +153,29 @@ async function loginEExecutarAmbos(message, sendResponse) {
       sendResponse({ ok: false, erro: (login && login.erro) || "Não foi possível concluir o login no VITAI." });
       return;
     }
-    await new Promise(resolve => setTimeout(resolve, 1200));
-    sendResponse({ ok: true, mensagem: "Login enviado ao VITAI. Agora informe o período e clique para baixar os dois relatórios." });
+    await new Promise(resolve => setTimeout(resolve, 2500));
+    const verificacao = await chrome.scripting.executeScript({
+      target: { tabId: aba.tabId },
+      world: "MAIN",
+      func: () => {
+        const senha = document.querySelector('input[type="password"]');
+        const mensagemErro = Array.from(document.querySelectorAll(".error, .erro, .alert-danger, [role=alert]"))
+          .map(el => (el.innerText || "").trim()).filter(Boolean).join(" ");
+        if (mensagemErro && /senha|usu.rio|inv.lid|incorret|falha|erro/i.test(mensagemErro)) {
+          return { ok: false, erro: "O VITAI apresentou uma mensagem de login: " + mensagemErro.slice(0, 240) };
+        }
+        if (!senha || document.querySelector("#treeview") || typeof window.openWindow === "function") {
+          return { ok: true };
+        }
+        return { ok: false, erro: "A tela de login continua aberta. Confira o usuário e a senha e tente novamente." };
+      }
+    });
+    const statusLogin = verificacao && verificacao[0] ? verificacao[0].result : null;
+    if (!statusLogin || !statusLogin.ok) {
+      sendResponse({ ok: false, erro: (statusLogin && statusLogin.erro) || "Não foi possível confirmar o login no VITAI." });
+      return;
+    }
+    sendResponse({ ok: true, mensagem: "Login confirmado. Agora confira o período e clique para baixar os dois relatórios." });
   } catch (erro) {
     sendResponse({ ok: false, erro: erro && erro.message ? erro.message : String(erro) });
   }
