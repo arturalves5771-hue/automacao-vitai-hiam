@@ -131,7 +131,7 @@ async function loginEExecutarAmbos(message, sender, sendResponse) {
           campos.find(el => el !== senhaInput && !/cpf|certificado|digital/.test(textoCampo(el)) &&
             (el.type === "text" || el.type === "email"));
         if (!senhaInput || !usuarioInput) {
-          if (document.querySelector("#treeview") || typeof window.openWindow === "function") {
+          if (document.querySelector("#treeview")) {
             return { ok: true, jaLogado: true, mensagem: "Sessão do VITAI já parece estar aberta." };
           }
           return { ok: false, erro: "Não encontrei os campos de usuário e senha na página do VITAI. Confira se a tela de login está aberta." };
@@ -175,7 +175,7 @@ async function loginEExecutarAmbos(message, sender, sendResponse) {
         if (mensagemErro && /senha|usu.rio|inv.lid|incorret|falha|erro/i.test(mensagemErro)) {
           return { ok: false, erro: "O VITAI apresentou uma mensagem de login: " + mensagemErro.slice(0, 240) };
         }
-        if (!senha || document.querySelector("#treeview") || typeof window.openWindow === "function") {
+        if (!senha || document.querySelector("#treeview")) {
           return { ok: true };
         }
         return { ok: false, erro: "A tela de login continua aberta. Confira o usuário e a senha e tente novamente." };
