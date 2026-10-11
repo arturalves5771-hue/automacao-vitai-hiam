@@ -37,7 +37,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
-  if (message.type === "VITAI_LOGIN_E_EXECUTAR_AMBOS") {
+  if (message.type === "VITAI_LOGIN_VITAI") {
     loginEExecutarAmbos(message, sendResponse);
     return true;
   }
@@ -146,7 +146,7 @@ async function loginEExecutarAmbos(message, sendResponse) {
       return;
     }
     await new Promise(resolve => setTimeout(resolve, 1200));
-    executarAmbos(message, sendResponse);
+    sendResponse({ ok: true, mensagem: "Login enviado ao VITAI. Agora informe o período e clique para baixar os dois relatórios." });
   } catch (erro) {
     sendResponse({ ok: false, erro: erro && erro.message ? erro.message : String(erro) });
   }
