@@ -120,10 +120,13 @@ async function loginEExecutarAmbos(message, sendResponse) {
         const campos = Array.from(document.querySelectorAll("input:not([type=hidden]):not([type=submit]):not([type=button])"));
         const senhaInput = campos.find(el => el.type === "password" ||
           /senha|password|pass/.test(normalizar([el.name, el.id, el.autocomplete, el.placeholder].join(" "))));
+        const textoCampo = (el) => normalizar([el.name, el.id, el.autocomplete, el.placeholder, el.getAttribute("aria-label")].join(" "));
+        // Prioriza o campo de usuário/login/matrícula. Não escolhe CPF primeiro,
+        // pois o VITAI também pode apresentar uma opção de certificado digital.
         const usuarioInput = campos.find(el => el !== senhaInput &&
-          (/user|login|usuario|cpf|matricula/.test(normalizar([el.name, el.id, el.autocomplete, el.placeholder].join(" "))) ||
-           el.autocomplete === "username")) ||
-          campos.find(el => el !== senhaInput && (el.type === "text" || el.type === "email"));
+          (/user|login|usuario|matricula/.test(textoCampo(el)) || el.autocomplete === "username")) ||
+          campos.find(el => el !== senhaInput && !/cpf|certificado|digital/.test(textoCampo(el)) &&
+            (el.type === "text" || el.type === "email"));
         if (!senhaInput || !usuarioInput) {
           if (document.querySelector("#treeview") || typeof window.openWindow === "function") {
             return { ok: true, jaLogado: true, mensagem: "Sessão do VITAI já parece estar aberta." };
@@ -139,11 +142,16 @@ async function loginEExecutarAmbos(message, sendResponse) {
         preencher(usuarioInput, credenciais.usuario);
         preencher(senhaInput, credenciais.senha);
         const form = senhaInput.form || usuarioInput.form;
-        const botoes = Array.from((form || document).querySelectorAll("button, input[type=submit], input[type=button], a"));
-        const botaoLogin = botoes.find(el => /entrar|acessar|login|autenticar/i.test((el.innerText || el.value || el.textContent || "").trim()));
+        const botoes = Array.from((form || document).querySelectorAll("button, input[type=submit], input[type=button]"));
+        const botaoLogin = botoes.find(el => {
+          const texto = normalizar(el.innerText || el.value || el.textContent || "");
+          // Nunca aciona a opção de certificado digital.
+          return /entrar|acessar|login|autenticar/.test(texto) &&
+            !/certificado|digital|cpf/.test(texto);
+        });
         if (botaoLogin) botaoLogin.click();
         else if (form) form.requestSubmit ? form.requestSubmit() : form.submit();
-        else return { ok: false, erro: "Preenchi os campos, mas não encontrei o botão/formulário para entrar no VITAI." };
+        else return { ok: false, erro: "Preenchi os campos, mas não encontrei o formulário de usuário e senha do VITAI." };
 
         return { ok: true, mensagem: "Credenciais preenchidas e envio do login acionado." };
       }
