@@ -85,23 +85,23 @@
     </div>
 
     
-    <section class="card" style="margin-bottom:16px">
-      <h2>Período dos relatórios</h2>
+    <section id="etapaDatas" class="card" style="margin-bottom:16px;display:none">
+      <h2>Etapa 2 — Período dos relatórios</h2>
       <p>O período será aplicado do primeiro dia às 00:00:00 até o último dia às 23:59:59.</p>
       <div class="linha">
         <label>Data inicial<br><input id="dataInicial" type="date" required></label>
         <label>Data final<br><input id="dataFinal" type="date" required></label>
       </div>
     </section>
-    <section class="card" style="margin-bottom:16px">
-      <h2>Entrar e exportar os relatórios</h2>
-      <p>Digite seu usuário e senha do VITAI. A automação tentará entrar no sistema, depois aplicará as datas acima e baixará Emergência e Internação.</p>
+    <section id="etapaLogin" class="card" style="margin-bottom:16px">
+      <h2>Etapa 1 — Entrar no VITAI</h2>
+      <p>Digite seu usuário e senha. A automação abrirá o VITAI, tentará entrar e, quando concluir esta etapa, liberará os campos de data.</p>
       <div class="linha" style="margin-bottom:12px">
         <label>Usuário do VITAI<br><input id="usuarioVitai" type="text" autocomplete="username" style="margin-top:6px;padding:10px 11px;border:1px solid var(--borda);border-radius:9px;font:inherit" required></label>
         <label>Senha do VITAI<br><input id="senhaVitai" type="password" autocomplete="current-password" style="margin-top:6px;padding:10px 11px;border:1px solid var(--borda);border-radius:9px;font:inherit" required></label>
       </div>
-      <button id="btnBaixarAmbos">Entrar no VITAI e baixar os dois relatórios</button>
-      <div id="statusAmbos" class="status" role="status" aria-live="polite">Pronto. Informe usuário e senha para iniciar.</div>
+      <button id="btnLogin">Entrar no VITAI</button>
+      <div id="statusLogin" class="status" role="status" aria-live="polite">Informe usuário e senha para iniciar.</div>
     </section>
     <div class="grade">
       <section class="card">
@@ -142,7 +142,7 @@
     </div>
   </main>
 
-  <footer>Automação VITAI HIAM · versão 0.4.0 · uso interno autorizado</footer>
+  <footer>Automação VITAI HIAM · versão 0.5.0 · uso interno autorizado</footer>
 
   <script>
     const ORIGEM = "AUTOMACAO_VITAI_HIAM";
@@ -151,6 +151,10 @@
     const btnAbrir = document.getElementById("btnAbrir");
     const btnPasta = document.getElementById("btnPasta");
     const btnBaixarAmbos = document.getElementById("btnBaixarAmbos");
+    const btnLogin = document.getElementById("btnLogin");
+    const statusLogin = document.getElementById("statusLogin");
+    const etapaDatas = document.getElementById("etapaDatas");
+    const etapaExportacao = document.getElementById("etapaExportacao");
     const statusAmbos = document.getElementById("statusAmbos");
     const dataInicial = document.getElementById("dataInicial");
     const dataFinal = document.getElementById("dataFinal");
@@ -198,6 +202,18 @@
             : "Não foi possível executar: " + (resposta.erro || "erro desconhecido");
         }
       }
+      if (event.data.type === "VITAI_LOGIN_VITAI_RESPOSTA") {
+        btnLogin.disabled = false;
+        if (resposta.ok) {
+          document.getElementById("etapaLogin").style.display = "none";
+          etapaDatas.style.display = "block";
+          etapaExportacao.style.display = "block";
+          statusLogin.textContent = resposta.mensagem || "Login concluído.";
+          statusAmbos.textContent = "Login concluído. Confira as datas e clique em Baixar os dois relatórios automaticamente.";
+        } else {
+          statusLogin.textContent = "Não foi possível entrar: " + (resposta.erro || "erro desconhecido");
+        }
+      }
       if (event.data.type === "VITAI_EXECUTAR_AMBOS_RESPOSTA") {
         btnBaixarAmbos.disabled = false;
         if (resposta.ok) {
@@ -211,25 +227,29 @@
       }
     });
 
+    btnLogin.addEventListener("click", () => {
+      const usuario = usuarioVitai.value.trim();
+      const senha = senhaVitai.value;
+      if (!usuario || !senha) { statusLogin.textContent = "Informe o usuário e a senha do VITAI."; return; }
+      btnLogin.disabled = true;
+      statusLogin.textContent = "Abrindo a sessão e tentando entrar no VITAI...";
+      window.postMessage({ origem: ORIGEM, type: "VITAI_LOGIN_VITAI", usuario, senha }, location.origin);
+      senhaVitai.value = "";
+    });
+
     btnBaixarAmbos.addEventListener("click", () => {
       const inicio = dataInicial.value;
       const fim = dataFinal.value;
-      const usuario = usuarioVitai.value.trim();
-      const senha = senhaVitai.value;
-      if (!usuario || !senha) { statusAmbos.textContent = "Informe o usuário e a senha do VITAI."; return; }
       if (!inicio || !fim) { statusAmbos.textContent = "Informe a data inicial e a data final."; return; }
       if (inicio > fim) { statusAmbos.textContent = "A data inicial não pode ser posterior à data final."; return; }
       btnBaixarAmbos.disabled = true;
-      statusAmbos.textContent = "Abrindo o VITAI e tentando entrar. Depois disso, a automação preencherá as datas e exportará os dois relatórios...";
+      statusAmbos.textContent = "Aplicando as datas e exportando os dois relatórios...";
       window.postMessage({
         origem: ORIGEM,
-        type: "VITAI_LOGIN_E_EXECUTAR_AMBOS",
-        usuario,
-        senha,
+        type: "VITAI_EXECUTAR_AMBOS",
         dataInicial: inicio,
         dataFinal: fim
       }, location.origin);
-      senhaVitai.value = "";
     });
 
     document.querySelectorAll(".btnRelatorio").forEach((botao) => {
