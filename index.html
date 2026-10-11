@@ -81,7 +81,7 @@
 
   <main>
     <div class="aviso">
-      <strong>Versão de teste 0.5.0:</strong> informe suas credenciais nesta tela e clique uma vez. A extensão tentará entrar no VITAI, preencher o período Personalizado e baixar os dois relatórios em sequência. Usuário e senha não são salvos nem enviados a um servidor pelo código desta página; são usados somente durante a tentativa de login.
+      <strong>Versão de teste 0.6.0:</strong> informe suas credenciais nesta tela e clique uma vez. A extensão tentará entrar no VITAI, preencher o período Personalizado e baixar os dois relatórios em sequência. Usuário e senha não são salvos nem enviados a um servidor pelo código desta página; são usados somente durante a tentativa de login.
     </div>
 
     
@@ -95,7 +95,7 @@
     </section>
     <section id="etapaLogin" class="card" style="margin-bottom:16px">
       <h2>Etapa 1 — Entrar no VITAI</h2>
-      <p>Digite seu usuário e senha. A automação abrirá o VITAI, tentará entrar e, quando concluir esta etapa, liberará os campos de data.</p>
+      <p>Digite seu usuário e senha. A automação verificará o VITAI em uma guia em segundo plano e, quando confirmar o acesso, liberará os campos de data.</p>
       <div class="linha" style="margin-bottom:12px">
         <label>Usuário do VITAI<br><input id="usuarioVitai" type="text" autocomplete="username" style="margin-top:6px;padding:10px 11px;border:1px solid var(--borda);border-radius:9px;font:inherit" required></label>
         <label>Senha do VITAI<br><input id="senhaVitai" type="password" autocomplete="current-password" style="margin-top:6px;padding:10px 11px;border:1px solid var(--borda);border-radius:9px;font:inherit" required></label>
@@ -148,7 +148,7 @@
     </div>
   </main>
 
-  <footer>Automação VITAI HIAM · versão 0.5.0 · uso interno autorizado</footer>
+  <footer>Automação VITAI HIAM · versão 0.6.0 · uso interno autorizado</footer>
 
   <script>
     const ORIGEM = "AUTOMACAO_VITAI_HIAM";
@@ -220,6 +220,9 @@
           statusLogin.textContent = "Não foi possível entrar: " + (resposta.erro || "erro desconhecido");
         }
       }
+      if (event.data.type === "VITAI_PROGRESS") {
+        statusAmbos.textContent = event.data.texto || "A automação está trabalhando...";
+      }
       if (event.data.type === "VITAI_EXECUTAR_AMBOS_RESPOSTA") {
         btnBaixarAmbos.disabled = false;
         if (resposta.ok) {
@@ -238,7 +241,7 @@
       const senha = senhaVitai.value;
       if (!usuario || !senha) { statusLogin.textContent = "Informe o usuário e a senha do VITAI."; return; }
       btnLogin.disabled = true;
-      statusLogin.textContent = "Abrindo a sessão e tentando entrar no VITAI...";
+      statusLogin.textContent = "Verificando o VITAI em segundo plano e tentando entrar...";
       window.postMessage({ origem: ORIGEM, type: "VITAI_LOGIN_VITAI", usuario, senha }, location.origin);
       senhaVitai.value = "";
     });
@@ -249,7 +252,7 @@
       if (!inicio || !fim) { statusAmbos.textContent = "Informe a data inicial e a data final."; return; }
       if (inicio > fim) { statusAmbos.textContent = "A data inicial não pode ser posterior à data final."; return; }
       btnBaixarAmbos.disabled = true;
-      statusAmbos.textContent = "Aplicando as datas e exportando os dois relatórios...";
+      statusAmbos.textContent = "Iniciando a automação. A aplicação permanecerá aberta enquanto o VITAI trabalha em segundo plano...";
       window.postMessage({
         origem: ORIGEM,
         type: "VITAI_EXECUTAR_AMBOS",
