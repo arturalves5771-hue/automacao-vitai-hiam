@@ -2,9 +2,10 @@
 
 Extensão local do Chrome para automatizar a exportação dos relatórios do VITAI HIAM.
 
-## Versão 0.3.0 — exportação conjunta
+## Versão 0.5.0 — login, período e exportação conjunta
 
-- Um botão na página de controle inicia a exportação dos dois relatórios em sequência.
+- A aplicação apresenta três etapas: informar usuário/senha, conferir o período e baixar os dois relatórios em sequência.
+- As credenciais são usadas apenas para preencher a tela de login e não são salvas pela aplicação.
 - Navega na árvore do VITAI para **EMERGÊNCIA → Pacientes Registrados** e **INTERNAÇÃO → Altas Hospitalares**.
 - Seleciona **Personalizado**, preenche as datas e aciona diretamente **Exportar para Excel**.
 - Datas padrão: terça a domingo, dia anterior completo; segunda-feira, sexta-feira a domingo. As datas continuam editáveis.
