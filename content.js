@@ -4,7 +4,7 @@
   if (location.hostname.endsWith(".vercel.app")) {
     window.addEventListener("message", (event) => {
       if (event.source !== window || !event.data || event.data.origem !== "AUTOMACAO_VITAI_HIAM") return;
-      const tiposPermitidos = new Set(["VITAI_ABRIR_SISTEMA", "VITAI_EXECUTAR_RELATORIO"]);
+      const tiposPermitidos = new Set(["VITAI_ABRIR_SISTEMA", "VITAI_EXECUTAR_RELATORIO", "VITAI_EXECUTAR_AMBOS"]);
       if (!tiposPermitidos.has(event.data.type)) return;
 
       chrome.runtime.sendMessage({
