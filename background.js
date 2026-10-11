@@ -37,6 +37,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
+  if (message.type === "VITAI_LOGIN_E_EXECUTAR_AMBOS") {
+    loginEExecutarAmbos(message, sendResponse);
+    return true;
+  }
+
   if (message.type === "VITAI_EXECUTAR_AMBOS") {
     executarAmbos(message, sendResponse);
     return true;
@@ -44,7 +49,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 function validarDatas(inicial, final) {
-  const formato = /^\\d{4}-\\d{2}-\\d{2}$/;
+  const formato = /^\d{4}-\d{2}-\d{2}$/;
   if (!formato.test(inicial) || !formato.test(final)) return "Informe as duas datas no formato correto.";
   if (inicial > final) return "A data inicial não pode ser posterior à data final.";
   return "";
@@ -71,6 +76,80 @@ async function obterAbaVitai() {
     throw new Error("A aba registrada não é uma página do VITAI. Abra o sistema novamente.");
   }
   return { tabId, tab };
+}
+
+async function loginEExecutarAmbos(message, sendResponse) {
+  const usuario = String(message.usuario || "").trim();
+  const senha = String(message.senha || "");
+  if (!usuario || !senha) {
+    sendResponse({ ok: false, erro: "Informe o usuário e a senha do VITAI." });
+    return;
+  }
+
+  let aba;
+  try {
+    aba = await obterAbaVitai();
+    const resultadoLogin = await chrome.scripting.executeScript({
+      target: { tabId: aba.tabId },
+      world: "MAIN",
+      args: [{ usuario, senha }],
+      func: async (credenciais) => {
+        const pausa = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+        const normalizar = (s) => String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+        const campos = Array.from(document.querySelectorAll("input:not([type=hidden]):not([type=submit]):not([type=button])"));
+        const senhaInput = campos.find(el => el.type === "password" ||
+          /senha|password|pass/.test(normalizar([el.name, el.id, el.autocomplete, el.placeholder].join(" "))));
+        const usuarioInput = campos.find(el => el !== senhaInput &&
+          (/user|login|usuario|cpf|matricula/.test(normalizar([el.name, el.id, el.autocomplete, el.placeholder].join(" "))) ||
+           el.autocomplete === "username")) ||
+          campos.find(el => el !== senhaInput && (el.type === "text" || el.type === "email"));
+        if (!senhaInput || !usuarioInput) {
+          if (document.querySelector("#treeview") || typeof window.openWindow === "function") {
+            return { ok: true, jaLogado: true, mensagem: "Sessão do VITAI já parece estar aberta." };
+          }
+          return { ok: false, erro: "Não encontrei os campos de usuário e senha na página do VITAI. Confira se a tela de login está aberta." };
+        }
+        const preencher = (el, valor) => {
+          const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set;
+          setter.call(el, valor);
+          el.dispatchEvent(new Event("input", { bubbles: true }));
+          el.dispatchEvent(new Event("change", { bubbles: true }));
+        };
+        preencher(usuarioInput, credenciais.usuario);
+        preencher(senhaInput, credenciais.senha);
+        const form = senhaInput.form || usuarioInput.form;
+        const botoes = Array.from((form || document).querySelectorAll("button, input[type=submit], input[type=button], a"));
+        const botaoLogin = botoes.find(el => /entrar|acessar|login|autenticar/i.test((el.innerText || el.value || el.textContent || "").trim()));
+        if (botaoLogin) botaoLogin.click();
+        else if (form) form.requestSubmit ? form.requestSubmit() : form.submit();
+        else return { ok: false, erro: "Preenchi os campos, mas não encontrei o botão/formulário para entrar no VITAI." };
+
+        const inicio = Date.now();
+        while (Date.now() - inicio < 30000) {
+          await pausa(300);
+          const senhaAindaVisivel = document.querySelector('input[type="password"]');
+          const mensagemErro = Array.from(document.querySelectorAll(".error, .erro, .alert-danger, [role=alert]"))
+            .map(el => (el.innerText || "").trim()).filter(Boolean).join(" ");
+          if (mensagemErro && /senha|usu.rio|inv.lid|incorret|falha|erro/i.test(mensagemErro)) {
+            return { ok: false, erro: "O VITAI apresentou uma mensagem de login: " + mensagemErro.slice(0, 240) };
+          }
+          if (!senhaAindaVisivel || document.querySelector("#treeview") || typeof window.openWindow === "function") {
+            return { ok: true, mensagem: "Login enviado ao VITAI." };
+          }
+        }
+        return { ok: false, erro: "O VITAI não confirmou a entrada em 30 segundos. Verifique usuário, senha ou a tela de login." };
+      }
+    });
+    const login = resultadoLogin && resultadoLogin[0] ? resultadoLogin[0].result : null;
+    if (!login || !login.ok) {
+      sendResponse({ ok: false, erro: (login && login.erro) || "Não foi possível concluir o login no VITAI." });
+      return;
+    }
+    await new Promise(resolve => setTimeout(resolve, 1200));
+    executarAmbos(message, sendResponse);
+  } catch (erro) {
+    sendResponse({ ok: false, erro: erro && erro.message ? erro.message : String(erro) });
+  }
 }
 
 async function executarAmbos(message, sendResponse) {
