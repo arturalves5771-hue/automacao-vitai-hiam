@@ -11,7 +11,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (!message || !message.type) return;
 
   if (message.type === "VITAI_ABRIR_SISTEMA") {
-    chrome.tabs.create({ url: VITAI_URL, active: true }, (tab) => {
+    chrome.tabs.create({ url: VITAI_URL, active: false }, (tab) => {
       if (chrome.runtime.lastError) {
         sendResponse({ ok: false, erro: chrome.runtime.lastError.message });
         return;
@@ -38,12 +38,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   if (message.type === "VITAI_LOGIN_VITAI") {
-    loginEExecutarAmbos(message, sendResponse);
+    loginEExecutarAmbos(message, sender, sendResponse);
     return true;
   }
 
   if (message.type === "VITAI_EXECUTAR_AMBOS") {
-    executarAmbos(message, sendResponse);
+    executarAmbos(message, sender, sendResponse);
     return true;
   }
 });
@@ -78,7 +78,7 @@ async function obterAbaVitai() {
   return { tabId, tab };
 }
 
-async function loginEExecutarAmbos(message, sendResponse) {
+async function loginEExecutarAmbos(message, sender, sendResponse) {
   const usuario = String(message.usuario || "").trim();
   const senha = String(message.senha || "");
   if (!usuario || !senha) {
@@ -86,17 +86,20 @@ async function loginEExecutarAmbos(message, sendResponse) {
     return;
   }
 
+  const uiTabId = sender && sender.tab && sender.tab.id;
   let aba;
   try {
+    // Mantém a aplicação em primeiro plano; o VITAI fica em outra guia.
+    if (Number.isInteger(uiTabId)) await chrome.tabs.update(uiTabId, { active: true });
     try {
       aba = await obterAbaVitai();
     } catch (_) {
       const abertas = await chrome.tabs.query({ url: "https://hiam.vitai.care/*" });
       let tab = abertas.find(t => t.url && t.url.startsWith("https://hiam.vitai.care/"));
-      if (!tab) tab = await chrome.tabs.create({ url: VITAI_URL, active: true });
-      else await chrome.tabs.update(tab.id, { active: true });
+      if (!tab) tab = await chrome.tabs.create({ url: VITAI_URL, active: false });
       vitaiTabId = tab.id;
       await chrome.storage.session.set({ vitaiTabId: tab.id });
+      if (Number.isInteger(uiTabId)) await chrome.tabs.update(uiTabId, { active: true });
       await new Promise(resolve => {
         if (tab.status === "complete") return resolve();
         const listener = (tabId, info) => {
@@ -183,13 +186,14 @@ async function loginEExecutarAmbos(message, sendResponse) {
       sendResponse({ ok: false, erro: (statusLogin && statusLogin.erro) || "Não foi possível confirmar o login no VITAI." });
       return;
     }
-    sendResponse({ ok: true, mensagem: "Login confirmado. Agora confira o período e clique para baixar os dois relatórios." });
+    if (Number.isInteger(uiTabId)) await chrome.tabs.update(uiTabId, { active: true });
+    sendResponse({ ok: true, mensagem: "Login confirmado. O VITAI ficou em segundo plano. Confira o período e clique para baixar os dois relatórios." });
   } catch (erro) {
     sendResponse({ ok: false, erro: erro && erro.message ? erro.message : String(erro) });
   }
 }
 
-async function executarAmbos(message, sendResponse) {
+async function executarAmbos(message, sender, sendResponse) {
   const inicial = String(message.dataInicial || "");
   const final = String(message.dataFinal || "");
   const erroDatas = validarDatas(inicial, final);
@@ -207,8 +211,16 @@ async function executarAmbos(message, sendResponse) {
   }
 
   const resultados = [];
+  const uiTabId = sender && sender.tab && sender.tab.id;
+  const informar = async (texto) => {
+    if (Number.isInteger(uiTabId)) {
+      try { await chrome.tabs.sendMessage(uiTabId, { type: "VITAI_PROGRESS", texto }); } catch (_) {}
+    }
+  };
   try {
+    if (Number.isInteger(uiTabId)) await chrome.tabs.update(uiTabId, { active: true });
     for (const relatorio of RELATORIOS) {
+      await informar("Preparando o relatório " + relatorio.nome + "...");
       const filename = nomeArquivo(relatorio.prefixo, inicial, final);
       const inicioDownload = Date.now();
       await chrome.storage.session.set({
@@ -379,12 +391,14 @@ async function executarAmbos(message, sendResponse) {
         throw new Error((resultado && resultado.erro) || "O VITAI não retornou o resultado do relatório.");
       }
 
+      await informar("O VITAI preparou " + relatorio.nome + ". Aguardando o download do arquivo Excel...");
       await aguardarDownload(aba.tabId, inicioDownload, filename, 90000);
       resultados.push({
         relatorio: relatorio.nome,
         nomeArquivo: filename,
         ok: true
       });
+      await informar("Relatório " + relatorio.nome + " baixado. " + (resultados.length < RELATORIOS.length ? "Preparando o próximo relatório..." : "Finalizando a exportação..."));
     }
 
     await chrome.storage.session.remove("pendingDownload");
@@ -395,6 +409,7 @@ async function executarAmbos(message, sendResponse) {
     });
   } catch (erro) {
     await chrome.storage.session.remove("pendingDownload");
+    await informar("A exportação foi interrompida: " + (erro && erro.message ? erro.message : String(erro)));
     sendResponse({
       ok: false,
       erro: erro && erro.message ? erro.message : String(erro),
