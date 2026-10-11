@@ -4,14 +4,16 @@
   if (location.hostname.endsWith(".vercel.app")) {
     window.addEventListener("message", (event) => {
       if (event.source !== window || !event.data || event.data.origem !== "AUTOMACAO_VITAI_HIAM") return;
-      const tiposPermitidos = new Set(["VITAI_ABRIR_SISTEMA", "VITAI_EXECUTAR_RELATORIO", "VITAI_EXECUTAR_AMBOS"]);
+      const tiposPermitidos = new Set(["VITAI_ABRIR_SISTEMA", "VITAI_EXECUTAR_RELATORIO", "VITAI_EXECUTAR_AMBOS", "VITAI_LOGIN_E_EXECUTAR_AMBOS"]);
       if (!tiposPermitidos.has(event.data.type)) return;
 
       chrome.runtime.sendMessage({
         type: event.data.type,
         relatorio: event.data.relatorio,
         dataInicial: event.data.dataInicial,
-        dataFinal: event.data.dataFinal
+        dataFinal: event.data.dataFinal,
+        usuario: event.data.usuario,
+        senha: event.data.senha
       }, (resposta) => {
         window.postMessage({
           origem: "EXTENSAO_VITAI_HIAM",
