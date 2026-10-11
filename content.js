@@ -2,6 +2,11 @@
   const VITAI_ORIGIN = "https://hiam.vitai.care";
 
   if (location.hostname.endsWith(".vercel.app")) {
+    chrome.runtime.onMessage.addListener((message) => {
+      if (message && message.type === "VITAI_PROGRESS") {
+        window.postMessage({ origem: "EXTENSAO_VITAI_HIAM", type: "VITAI_PROGRESS", texto: message.texto || "" }, location.origin);
+      }
+    });
     window.addEventListener("message", (event) => {
       if (event.source !== window || !event.data || event.data.origem !== "AUTOMACAO_VITAI_HIAM") return;
       const tiposPermitidos = new Set(["VITAI_ABRIR_SISTEMA", "VITAI_EXECUTAR_RELATORIO", "VITAI_EXECUTAR_AMBOS", "VITAI_LOGIN_E_EXECUTAR_AMBOS", "VITAI_LOGIN_VITAI"]);
