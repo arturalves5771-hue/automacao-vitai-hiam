@@ -81,7 +81,7 @@
 
   <main>
     <div class="aviso">
-      <strong>Versão de teste 0.4.0:</strong> informe suas credenciais nesta tela e clique uma vez. A extensão tentará entrar no VITAI, preencher o período Personalizado e baixar os dois relatórios em sequência. Usuário e senha não são salvos nem enviados a um servidor pelo código desta página; são usados somente durante a tentativa de login.
+      <strong>Versão de teste 0.5.0:</strong> informe suas credenciais nesta tela e clique uma vez. A extensão tentará entrar no VITAI, preencher o período Personalizado e baixar os dois relatórios em sequência. Usuário e senha não são salvos nem enviados a um servidor pelo código desta página; são usados somente durante a tentativa de login.
     </div>
 
     
@@ -102,6 +102,12 @@
       </div>
       <button id="btnLogin">Entrar no VITAI</button>
       <div id="statusLogin" class="status" role="status" aria-live="polite">Informe usuário e senha para iniciar.</div>
+    </section>
+    <section id="etapaExportacao" class="card" style="margin-bottom:16px;display:none">
+      <h2>Etapa 3 — Baixar os dois relatórios</h2>
+      <p>Confira as datas. A extensão localizará Emergência e Internação, aplicará o período Personalizado e baixará os dois arquivos Excel em sequência.</p>
+      <button id="btnBaixarAmbos">Baixar os dois relatórios automaticamente</button>
+      <div id="statusAmbos" class="status" role="status" aria-live="polite">Após o login, confira as datas e inicie a exportação.</div>
     </section>
     <div class="grade">
       <section class="card">
