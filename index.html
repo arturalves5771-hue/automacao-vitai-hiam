@@ -81,8 +81,8 @@
 
   <main>
     <div class="aviso">
-      <strong>Versão de teste 0.2.0:</strong> abra o relatório desejado no VITAI antes de clicar em Exportar. A extensão aplica o período informado e aciona a exportação nativa. Execute um relatório por vez.
-      Não informe sua senha nesta página: faça o login manualmente no site oficial.
+      <strong>Versão de teste 0.3.0:</strong> abra o relatório desejado no VITAI antes de clicar em Exportar. A extensão aplica o período informado e aciona a exportação nativa. Execute um relatório por vez.
+      Faça o login no site oficial do VITAI antes de clicar no botão de exportação conjunta. A senha não é enviada para esta página.
     </div>
 
     
@@ -93,6 +93,12 @@
         <label>Data inicial<br><input id="dataInicial" type="date" required></label>
         <label>Data final<br><input id="dataFinal" type="date" required></label>
       </div>
+    </section>
+    <section class="card" style="margin-bottom:16px">
+      <h2>Exportação automática</h2>
+      <p>Com o VITAI já aberto e com sessão iniciada, clique uma vez para localizar os dois relatórios, aplicar o período Personalizado e baixar os dois arquivos Excel em sequência.</p>
+      <button id="btnBaixarAmbos">Baixar os dois relatórios automaticamente</button>
+      <div id="statusAmbos" class="status" role="status" aria-live="polite">Pronto. Entre no VITAI e deixe a sessão iniciada antes de executar.</div>
     </section>
     <div class="grade">
       <section class="card">
@@ -133,7 +139,7 @@
     </div>
   </main>
 
-  <footer>Automação VITAI HIAM · versão 0.2.0 · uso interno autorizado</footer>
+  <footer>Automação VITAI HIAM · versão 0.3.0 · uso interno autorizado</footer>
 
   <script>
     const ORIGEM = "AUTOMACAO_VITAI_HIAM";
@@ -141,6 +147,8 @@
     const statusPasta = document.getElementById("statusPasta");
     const btnAbrir = document.getElementById("btnAbrir");
     const btnPasta = document.getElementById("btnPasta");
+    const btnBaixarAmbos = document.getElementById("btnBaixarAmbos");
+    const statusAmbos = document.getElementById("statusAmbos");
     const dataInicial = document.getElementById("dataInicial");
     const dataFinal = document.getElementById("dataFinal");
     const statusPorRelatorio = {
@@ -150,9 +158,18 @@
     function dataLocalISO(data) {
       return data.getFullYear() + "-" + String(data.getMonth() + 1).padStart(2, "0") + "-" + String(data.getDate()).padStart(2, "0");
     }
-    const hoje = dataLocalISO(new Date());
-    dataInicial.value = hoje;
-    dataFinal.value = hoje;
+    const agora = new Date();
+    const inicioPadrao = new Date(agora);
+    const fimPadrao = new Date(agora);
+    if (agora.getDay() === 1) {
+      inicioPadrao.setDate(agora.getDate() - 4);
+      fimPadrao.setDate(agora.getDate() - 1);
+    } else {
+      inicioPadrao.setDate(agora.getDate() - 1);
+      fimPadrao.setDate(agora.getDate() - 1);
+    }
+    dataInicial.value = dataLocalISO(inicioPadrao);
+    dataFinal.value = dataLocalISO(fimPadrao);
 
     btnAbrir.addEventListener("click", () => {
       statusAcesso.textContent = "Abrindo o VITAI...";
@@ -176,25 +193,37 @@
             : "Não foi possível executar: " + (resposta.erro || "erro desconhecido");
         }
       }
+      if (event.data.type === "VITAI_EXECUTAR_AMBOS_RESPOSTA") {
+        btnBaixarAmbos.disabled = false;
+        if (resposta.ok) {
+          const nomes = (resposta.resultados || []).map(item => item.nomeArquivo).join(" e ");
+          statusAmbos.textContent = (resposta.mensagem || "Exportação concluída.") + (nomes ? " Arquivos: " + nomes + "." : "");
+        } else {
+          const concluidos = (resposta.resultados || []).map(item => item.nomeArquivo).join(", ");
+          statusAmbos.textContent = "A automação parou: " + (resposta.erro || "erro desconhecido") +
+            (concluidos ? " Já concluído: " + concluidos + "." : "");
+        }
+      }
+    });
+
+    btnBaixarAmbos.addEventListener("click", () => {
+      const inicio = dataInicial.value;
+      const fim = dataFinal.value;
+      if (!inicio || !fim) { statusAmbos.textContent = "Informe a data inicial e a data final."; return; }
+      if (inicio > fim) { statusAmbos.textContent = "A data inicial não pode ser posterior à data final."; return; }
+      btnBaixarAmbos.disabled = true;
+      statusAmbos.textContent = "Iniciando: abrindo os relatórios, selecionando Personalizado e exportando o primeiro Excel...";
+      window.postMessage({
+        origem: ORIGEM,
+        type: "VITAI_EXECUTAR_AMBOS",
+        dataInicial: inicio,
+        dataFinal: fim
+      }, location.origin);
     });
 
     document.querySelectorAll(".btnRelatorio").forEach((botao) => {
-      botao.addEventListener("click", () => {
-        const relatorio = botao.dataset.relatorio;
-        const alvo = statusPorRelatorio[relatorio];
-        const inicio = dataInicial.value;
-        const fim = dataFinal.value;
-        if (!inicio || !fim) { alvo.textContent = "Informe a data inicial e a data final."; return; }
-        if (inicio > fim) { alvo.textContent = "A data inicial não pode ser posterior à data final."; return; }
-        alvo.textContent = "Enviando comando à extensão e consultando o relatório...";
-        window.postMessage({
-          origem: ORIGEM,
-          type: "VITAI_EXECUTAR_RELATORIO",
-          relatorio,
-          dataInicial: inicio,
-          dataFinal: fim
-        }, location.origin);
-      });
+      botao.disabled = true;
+      botao.textContent = "Usar botão de exportação conjunta acima";
     });
 
     let pastaSelecionada = null;
