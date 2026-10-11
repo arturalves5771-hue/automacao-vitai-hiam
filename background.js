@@ -157,13 +157,24 @@ async function executarAmbos(message, sendResponse) {
               itemRelatorio = await esperar(() => acharItem(args.nome), 12000, "o relatório " + args.nome);
             }
 
+            const gradeAnterior = document.querySelector("#grid");
             tree.select(itemRelatorio);
             tree.trigger("select", { node: itemRelatorio[0] });
 
-            await esperar(() => document.querySelector("#uiDtInicial") &&
-              document.querySelector("#uiDtFinal") &&
-              document.querySelector("#grid") &&
-              $("#grid").data("kendoGrid"), 30000, "os filtros e a grade de " + args.nome);
+            await esperar(() => {
+              const titulo = document.querySelector("#uiNomeRelatorio");
+              const gradeElemento = document.querySelector("#grid");
+              const gradeAtual = gradeElemento && $("#grid").data("kendoGrid");
+              if (!titulo || normalizar(titulo.textContent) !== normalizar(args.nome) ||
+                  !gradeElemento || !gradeAtual ||
+                  !document.querySelector("#uiDtInicial") || !document.querySelector("#uiDtFinal")) return false;
+              const leitura = gradeAtual.dataSource && gradeAtual.dataSource.transport &&
+                gradeAtual.dataSource.transport.options && gradeAtual.dataSource.transport.options.read;
+              const parametros = leitura && typeof leitura.data === "function" ? leitura.data() :
+                (leitura && leitura.data && typeof leitura.data === "object" ? leitura.data : null);
+              const datasource = String(parametros && parametros.datasourceId || "");
+              return gradeElemento !== gradeAnterior || datasource === String(args.datasourceId);
+            }, 30000, "a grade atualizada do relatório " + args.nome);
 
             const periodoInput = document.querySelector("#uiPeriodo") ||
               document.querySelector("input[aria-owns='uiPeriodo_listbox']");
