@@ -81,8 +81,7 @@
 
   <main>
     <div class="aviso">
-      <strong>Versão de teste 0.3.0:</strong> abra o relatório desejado no VITAI antes de clicar em Exportar. A extensão aplica o período informado e aciona a exportação nativa. Execute um relatório por vez.
-      Faça o login no site oficial do VITAI antes de clicar no botão de exportação conjunta. A senha não é enviada para esta página.
+      <strong>Versão de teste 0.4.0:</strong> informe suas credenciais nesta tela e clique uma vez. A extensão tentará entrar no VITAI, preencher o período Personalizado e baixar os dois relatórios em sequência. Usuário e senha não são salvos nem enviados a um servidor pelo código desta página; são usados somente durante a tentativa de login.
     </div>
 
     
@@ -95,10 +94,14 @@
       </div>
     </section>
     <section class="card" style="margin-bottom:16px">
-      <h2>Exportação automática</h2>
-      <p>Com o VITAI já aberto e com sessão iniciada, clique uma vez para localizar os dois relatórios, aplicar o período Personalizado e baixar os dois arquivos Excel em sequência.</p>
-      <button id="btnBaixarAmbos">Baixar os dois relatórios automaticamente</button>
-      <div id="statusAmbos" class="status" role="status" aria-live="polite">Pronto. Entre no VITAI e deixe a sessão iniciada antes de executar.</div>
+      <h2>Entrar e exportar os relatórios</h2>
+      <p>Digite seu usuário e senha do VITAI. A automação tentará entrar no sistema, depois aplicará as datas acima e baixará Emergência e Internação.</p>
+      <div class="linha" style="margin-bottom:12px">
+        <label>Usuário do VITAI<br><input id="usuarioVitai" type="text" autocomplete="username" style="margin-top:6px;padding:10px 11px;border:1px solid var(--borda);border-radius:9px;font:inherit" required></label>
+        <label>Senha do VITAI<br><input id="senhaVitai" type="password" autocomplete="current-password" style="margin-top:6px;padding:10px 11px;border:1px solid var(--borda);border-radius:9px;font:inherit" required></label>
+      </div>
+      <button id="btnBaixarAmbos">Entrar no VITAI e baixar os dois relatórios</button>
+      <div id="statusAmbos" class="status" role="status" aria-live="polite">Pronto. Informe usuário e senha para iniciar.</div>
     </section>
     <div class="grade">
       <section class="card">
@@ -139,7 +142,7 @@
     </div>
   </main>
 
-  <footer>Automação VITAI HIAM · versão 0.3.0 · uso interno autorizado</footer>
+  <footer>Automação VITAI HIAM · versão 0.4.0 · uso interno autorizado</footer>
 
   <script>
     const ORIGEM = "AUTOMACAO_VITAI_HIAM";
@@ -151,6 +154,8 @@
     const statusAmbos = document.getElementById("statusAmbos");
     const dataInicial = document.getElementById("dataInicial");
     const dataFinal = document.getElementById("dataFinal");
+    const usuarioVitai = document.getElementById("usuarioVitai");
+    const senhaVitai = document.getElementById("senhaVitai");
     const statusPorRelatorio = {
       "emergencia-pacientes-registrados": document.getElementById("statusEmergencia"),
       "internacao-altas": document.getElementById("statusInternacao")
@@ -209,16 +214,22 @@
     btnBaixarAmbos.addEventListener("click", () => {
       const inicio = dataInicial.value;
       const fim = dataFinal.value;
+      const usuario = usuarioVitai.value.trim();
+      const senha = senhaVitai.value;
+      if (!usuario || !senha) { statusAmbos.textContent = "Informe o usuário e a senha do VITAI."; return; }
       if (!inicio || !fim) { statusAmbos.textContent = "Informe a data inicial e a data final."; return; }
       if (inicio > fim) { statusAmbos.textContent = "A data inicial não pode ser posterior à data final."; return; }
       btnBaixarAmbos.disabled = true;
-      statusAmbos.textContent = "Iniciando: abrindo os relatórios, selecionando Personalizado e exportando o primeiro Excel...";
+      statusAmbos.textContent = "Abrindo o VITAI e tentando entrar. Depois disso, a automação preencherá as datas e exportará os dois relatórios...";
       window.postMessage({
         origem: ORIGEM,
-        type: "VITAI_EXECUTAR_AMBOS",
+        type: "VITAI_LOGIN_E_EXECUTAR_AMBOS",
+        usuario,
+        senha,
         dataInicial: inicio,
         dataFinal: fim
       }, location.origin);
+      senhaVitai.value = "";
     });
 
     document.querySelectorAll(".btnRelatorio").forEach((botao) => {
