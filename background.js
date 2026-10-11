@@ -88,7 +88,28 @@ async function loginEExecutarAmbos(message, sendResponse) {
 
   let aba;
   try {
-    aba = await obterAbaVitai();
+    try {
+      aba = await obterAbaVitai();
+    } catch (_) {
+      const abertas = await chrome.tabs.query({ url: "https://hiam.vitai.care/*" });
+      let tab = abertas.find(t => t.url && t.url.startsWith("https://hiam.vitai.care/"));
+      if (!tab) tab = await chrome.tabs.create({ url: VITAI_URL, active: true });
+      else await chrome.tabs.update(tab.id, { active: true });
+      vitaiTabId = tab.id;
+      await chrome.storage.session.set({ vitaiTabId: tab.id });
+      await new Promise(resolve => {
+        if (tab.status === "complete") return resolve();
+        const listener = (tabId, info) => {
+          if (tabId === tab.id && info.status === "complete") {
+            chrome.tabs.onUpdated.removeListener(listener);
+            resolve();
+          }
+        };
+        chrome.tabs.onUpdated.addListener(listener);
+        setTimeout(() => { chrome.tabs.onUpdated.removeListener(listener); resolve(); }, 15000);
+      });
+      aba = { tabId: tab.id, tab: await chrome.tabs.get(tab.id) };
+    }
     const resultadoLogin = await chrome.scripting.executeScript({
       target: { tabId: aba.tabId },
       world: "MAIN",
