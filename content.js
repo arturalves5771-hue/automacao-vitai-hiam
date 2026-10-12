@@ -36,5 +36,10 @@
 
   if (location.origin === VITAI_ORIGIN) {
     chrome.runtime.sendMessage({ type: "VITAI_REGISTRAR_ABA" });
+    window.addEventListener("message", (event) => {
+      if (event.source !== window || event.origin !== location.origin ||
+          !event.data || event.data.origem !== "VITAI_AUTOMACAO_PROGRESSO") return;
+      chrome.runtime.sendMessage({ type: "VITAI_PROGRESS_INTERNO", texto: String(event.data.texto || "") });
+    });
   }
 })();
