@@ -1,258 +1,313 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#123b32">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#166534">
   <title>Automação VITAI HIAM</title>
   <style>
-    :root {
-      color-scheme: light;
-      --verde: #174b3e;
-      --verde-2: #216653;
-      --fundo: #f3f5f2;
-      --texto: #1c2924;
-      --muted: #62716a;
-      --borda: #dbe2dc;
-      --branco: #fff;
-    }
     * { box-sizing: border-box; }
+    :root {
+      --verde: #166534;
+      --verde-hover: #14532d;
+      --fundo: #f3f6f4;
+      --texto: #1f2937;
+      --muted: #6b7280;
+      --borda: #d1d5db;
+    }
     body {
       margin: 0;
-      font-family: "Segoe UI", Arial, sans-serif;
-      color: var(--texto);
-      background: var(--fundo);
       min-height: 100vh;
+      padding: 1px 0 30px;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--fundo);
+      color: var(--texto);
     }
-    header {
-      background: var(--verde);
-      color: white;
-      padding: 28px 20px 34px;
-    }
-    .topo, main { width: min(920px, calc(100% - 32px)); margin: 0 auto; }
-    .marca { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; opacity: .8; }
-    h1 { margin: 10px 0 8px; font-size: clamp(26px, 4vw, 38px); letter-spacing: -.03em; }
-    header p { margin: 0; max-width: 640px; line-height: 1.55; color: #e0eee8; }
-    main { padding: 24px 0 44px; }
-    .aviso {
-      border: 1px solid #e7d7a8; background: #fff9e9; color: #65501c;
-      border-radius: 12px; padding: 13px 15px; line-height: 1.5; margin-bottom: 18px;
-      font-size: 14px;
-    }
-    .grade { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    .container { width: min(900px, 92%); margin: 44px auto; }
     .card {
-      background: var(--branco); border: 1px solid var(--borda); border-radius: 16px;
-      padding: 21px; box-shadow: 0 5px 18px #203b2b0a;
+      background: #fff;
+      border-radius: 16px;
+      padding: 30px;
+      box-shadow: 0 8px 30px rgba(0,0,0,.08);
+      border: 1px solid #e8ece9;
     }
-    .card h2 { margin: 0 0 8px; font-size: 18px; }
-    .card p { margin: 0 0 16px; color: var(--muted); font-size: 14px; line-height: 1.5; }
-    button, .link {
-      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-      border: 0; border-radius: 10px; padding: 12px 15px; min-height: 44px;
-      font: inherit; font-weight: 650; text-decoration: none; cursor: pointer;
-      background: var(--verde); color: white;
+    h1 { margin: 0 0 8px; color: var(--verde); font-size: 30px; }
+    .subtitulo { margin-bottom: 25px; color: var(--muted); line-height: 1.5; }
+    .versao { margin-top: -15px; margin-bottom: 22px; color: #9ca3af; font-size: 13px; }
+    .status {
+      padding: 14px 16px;
+      border-radius: 10px;
+      background: #f3f4f6;
+      margin: 0 0 22px;
+      font-weight: 600;
+      font-size: 14px;
+      line-height: 1.5;
+      overflow-wrap: anywhere;
     }
-    button:hover, .link:hover { background: var(--verde-2); }
-    button.secundario { background: #e8efeb; color: var(--verde); }
-    button.secundario:hover { background: #dce8e1; }
-    button:disabled { cursor: not-allowed; opacity: .55; }
-    input[type="date"] { margin-top: 6px; padding: 10px 11px; border: 1px solid var(--borda); border-radius: 9px; font: inherit; color: var(--texto); background: #fff; }
-    .linha { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-    .status { font-size: 13px; color: var(--muted); margin-top: 12px; line-height: 1.5; overflow-wrap: anywhere; }
-    .relatorio { display: flex; flex-direction: column; min-height: 190px; }
-    .relatorio .rodape { margin-top: auto; }
-    .tag {
-      display: inline-block; width: fit-content; padding: 5px 8px; border-radius: 999px;
-      font-size: 11px; font-weight: 700; background: #edf1ee; color: #52645b;
-      margin-bottom: 12px;
+    .status.conectado, .mensagem.sucesso { background: #dcfce7; color: #166534; }
+    .status.erro, .mensagem.erro { background: #fee2e2; color: #991b1b; }
+    label { display: block; margin-bottom: 7px; font-weight: bold; font-size: 14px; }
+    input {
+      width: 100%;
+      padding: 13px;
+      border: 1px solid var(--borda);
+      border-radius: 8px;
+      font: inherit;
+      font-size: 16px;
+      margin: 6px 0 18px;
+      background: #fff;
+      color: var(--texto);
     }
-    footer { text-align: center; color: var(--muted); font-size: 12px; padding: 4px 16px 28px; }
-    @media (max-width: 650px) { .grade { grid-template-columns: 1fr; } .card { padding: 18px; } }
+    input:focus { outline: none; border-color: #16a34a; box-shadow: 0 0 0 3px rgba(22,163,74,.12); }
+    button {
+      border: none;
+      border-radius: 9px;
+      padding: 13px 20px;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+      background: var(--verde);
+      color: #fff;
+    }
+    button:hover { background: var(--verde-hover); }
+    button:disabled { opacity: .6; cursor: not-allowed; }
+    .btn-login { width: 100%; }
+    .login-area { max-width: 450px; margin: auto; }
+    .painel { display: none; }
+    .painel.visivel { display: block; }
+    .titulo-painel { font-size: 21px; margin: 0 0 8px; }
+    .descricao { color: var(--muted); font-size: 14px; line-height: 1.55; margin: 0 0 20px; }
+    .exportacao {
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 22px;
+      background: #fafafa;
+      margin-bottom: 18px;
+    }
+    .datas { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    .datas input { margin-bottom: 8px; }
+    .btn-exportar { margin-top: 8px; min-width: 210px; }
+    .mensagem {
+      margin-top: 18px;
+      padding: 12px;
+      border-radius: 8px;
+      display: none;
+      font-size: 14px;
+      line-height: 1.5;
+      overflow-wrap: anywhere;
+    }
+    .mensagem.visivel { display: block; }
+    .relatorios { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .relatorio { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 18px; }
+    .relatorio .tag {
+      display: inline-block; margin-bottom: 10px; padding: 5px 8px;
+      border-radius: 999px; background: #eaf3ed; color: #166534;
+      font-size: 11px; font-weight: bold; letter-spacing: .04em;
+    }
+    .relatorio h3 { margin: 0 0 8px; font-size: 17px; }
+    .relatorio p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
+    .status-relatorio { margin-top: 12px; color: var(--muted); font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
+    .nota { margin-top: 18px; font-size: 12px; color: var(--muted); line-height: 1.5; }
+    .oculto { display: none !important; }
+    footer { text-align: center; color: var(--muted); font-size: 12px; margin: 24px 0 0; }
+    @media (max-width: 600px) {
+      .container { margin-top: 22px; }
+      .card { padding: 22px 18px; }
+      .datas, .relatorios { grid-template-columns: 1fr; gap: 8px; }
+      .btn-exportar { width: 100%; }
+    }
   </style>
 </head>
 <body>
-  <header>
-    <div class="topo">
-      <div class="marca">Ferramenta interna · HIAM</div>
+  <main class="container">
+    <section class="card" id="cardLogin">
+      <form class="login-area" id="formLogin">
+        <h1>Automação VITAI</h1>
+        <div class="subtitulo">Acesso ao sistema e exportação dos relatórios utilizados pelo SAME Laudos.</div>
+        <div class="versao">Versão 0.6.0</div>
+        <div class="status" id="statusLogin" role="status" aria-live="polite">🔴 VITAI desconectado</div>
+        <label for="usuario">Usuário</label>
+        <input type="text" id="usuario" name="username" autocomplete="username" placeholder="Digite seu usuário do VITAI" required>
+        <label for="senha">Senha</label>
+        <input type="password" id="senha" name="password" autocomplete="current-password" placeholder="Digite sua senha" required>
+        <button type="submit" class="btn-login" id="btnLogin">ENTRAR NO VITAI</button>
+        <div class="nota">As credenciais são usadas somente durante a tentativa de login e não são armazenadas por esta página.</div>
+      </form>
+    </section>
+
+    <section class="card painel" id="painel">
       <h1>Automação VITAI</h1>
-      <p>Acesso ao sistema e preparação dos relatórios utilizados pelo SAME Laudos.</p>
-    </div>
-  </header>
+      <div class="subtitulo">Painel de automação · SAME Laudos</div>
+      <div class="status conectado" id="statusPainel" role="status" aria-live="polite">🟢 Login confirmado no VITAI</div>
 
-  <main>
-    <div class="aviso">
-      <strong>Versão de teste 0.6.0:</strong> informe suas credenciais nesta tela e clique uma vez. A extensão tentará entrar no VITAI, preencher o período Personalizado e baixar os dois relatórios em sequência. Usuário e senha não são salvos nem enviados a um servidor pelo código desta página; são usados somente durante a tentativa de login.
-    </div>
+      <section class="exportacao">
+        <h2 class="titulo-painel">📅 Período dos relatórios</h2>
+        <p class="descricao">Confira as datas antes de iniciar. O VITAI receberá o primeiro dia às 00:00:00 e o último dia às 23:59:59.</p>
+        <div class="datas">
+          <div>
+            <label for="dataInicial">Data inicial</label>
+            <input type="date" id="dataInicial" required>
+          </div>
+          <div>
+            <label for="dataFinal">Data final</label>
+            <input type="date" id="dataFinal" required>
+          </div>
+        </div>
+        <button class="btn-exportar" id="btnExportar" type="button">BAIXAR OS DOIS RELATÓRIOS</button>
+        <div class="mensagem visivel sucesso" id="mensagem" role="status" aria-live="polite">Pronto para exportar. A guia do VITAI permanecerá em segundo plano.</div>
+      </section>
 
-    
-    <section id="etapaDatas" class="card" style="margin-bottom:16px;display:none">
-      <h2>Etapa 2 — Período dos relatórios</h2>
-      <p>O período será aplicado do primeiro dia às 00:00:00 até o último dia às 23:59:59.</p>
-      <div class="linha">
-        <label>Data inicial<br><input id="dataInicial" type="date" required></label>
-        <label>Data final<br><input id="dataFinal" type="date" required></label>
+      <h2 class="titulo-painel">Relatórios incluídos</h2>
+      <p class="descricao">Os dois relatórios serão processados em sequência. A automação só informa conclusão quando o Chrome confirmar os downloads.</p>
+      <div class="relatorios">
+        <article class="relatorio">
+          <span class="tag">RELATÓRIO 01</span>
+          <h3>Emergência — Pacientes registrados</h3>
+          <p>Datasource 100563</p>
+          <div class="status-relatorio" id="statusEmergencia">Aguardando início da exportação.</div>
+        </article>
+        <article class="relatorio">
+          <span class="tag">RELATÓRIO 02</span>
+          <h3>Internação — Altas hospitalares</h3>
+          <p>Datasource 100556</p>
+          <div class="status-relatorio" id="statusInternacao">Aguardando início da exportação.</div>
+        </article>
       </div>
+      <div class="nota">Os arquivos Excel são salvos na pasta de downloads configurada no Chrome. Para alterar o destino, ajuste as configurações de download do navegador.</div>
     </section>
-    <section id="etapaLogin" class="card" style="margin-bottom:16px">
-      <h2>Etapa 1 — Entrar no VITAI</h2>
-      <p>Digite seu usuário e senha. A automação verificará o VITAI em uma guia em segundo plano e, quando confirmar o acesso, liberará os campos de data.</p>
-      <div class="linha" style="margin-bottom:12px">
-        <label>Usuário do VITAI<br><input id="usuarioVitai" type="text" autocomplete="username" style="margin-top:6px;padding:10px 11px;border:1px solid var(--borda);border-radius:9px;font:inherit" required></label>
-        <label>Senha do VITAI<br><input id="senhaVitai" type="password" autocomplete="current-password" style="margin-top:6px;padding:10px 11px;border:1px solid var(--borda);border-radius:9px;font:inherit" required></label>
-      </div>
-      <button id="btnLogin">Entrar no VITAI</button>
-      <div id="statusLogin" class="status" role="status" aria-live="polite">Informe usuário e senha para iniciar.</div>
-    </section>
-    <section id="etapaExportacao" class="card" style="margin-bottom:16px;display:none">
-      <h2>Etapa 3 — Baixar os dois relatórios</h2>
-      <p>Confira as datas. A extensão localizará Emergência e Internação, aplicará o período Personalizado e baixará os dois arquivos Excel em sequência.</p>
-      <button id="btnBaixarAmbos">Baixar os dois relatórios automaticamente</button>
-      <div id="statusAmbos" class="status" role="status" aria-live="polite">Após o login, confira as datas e inicie a exportação.</div>
-    </section>
-    <div class="grade">
-      <section class="card">
-        <h2>1. Acessar o VITAI</h2>
-        <p>Abre o sistema oficial em outra aba. Digite usuário e senha diretamente no VITAI e conclua o login normalmente.</p>
-        <button id="btnAbrir">Abrir VITAI HIAM ↗</button>
-        <div id="statusAcesso" class="status" role="status" aria-live="polite">Pronto para abrir o sistema.</div>
-      </section>
-
-      <section class="card">
-        <h2>2. Pasta dos relatórios</h2>
-        <p>Selecione a pasta onde os arquivos Excel deverão ser gravados. A permissão é solicitada pelo Chrome.</p>
-        <div class="linha">
-          <button id="btnPasta" class="secundario">📁 Escolher pasta</button>
-        </div>
-        <div id="statusPasta" class="status" role="status" aria-live="polite">Nenhuma pasta selecionada nesta página.</div>
-      </section>
-
-      <section class="card relatorio">
-        <span class="tag">RELATÓRIO 01</span>
-        <h2>Emergência — pacientes registrados</h2>
-        <p>Exportação Excel do relatório de pacientes registrados na emergência.</p>
-        <div class="rodape">
-          <button class="btnRelatorio" data-relatorio="emergencia-pacientes-registrados">Exportar Excel</button>
-          <div id="statusEmergencia" class="status" role="status" aria-live="polite">Abra o relatório de Emergência no VITAI antes de executar.</div>
-        </div>
-      </section>
-
-      <section class="card relatorio">
-        <span class="tag">RELATÓRIO 02</span>
-        <h2>Internação — altas</h2>
-        <p>Exportação Excel do relatório de altas de internação.</p>
-        <div class="rodape">
-          <button class="btnRelatorio" data-relatorio="internacao-altas">Exportar Excel</button>
-          <div id="statusInternacao" class="status" role="status" aria-live="polite">Abra o relatório de Internação — altas no VITAI antes de executar.</div>
-        </div>
-      </section>
-    </div>
+    <footer>Automação VITAI HIAM · uso interno autorizado</footer>
   </main>
-
-  <footer>Automação VITAI HIAM · versão 0.6.0 · uso interno autorizado</footer>
 
   <script>
     const ORIGEM = "AUTOMACAO_VITAI_HIAM";
-    const statusAcesso = document.getElementById("statusAcesso");
-    const statusPasta = document.getElementById("statusPasta");
-    const btnAbrir = document.getElementById("btnAbrir");
-    const btnPasta = document.getElementById("btnPasta");
-    const btnBaixarAmbos = document.getElementById("btnBaixarAmbos");
+    const cardLogin = document.getElementById("cardLogin");
+    const formLogin = document.getElementById("formLogin");
+    const painel = document.getElementById("painel");
+    const usuario = document.getElementById("usuario");
+    const senha = document.getElementById("senha");
     const btnLogin = document.getElementById("btnLogin");
     const statusLogin = document.getElementById("statusLogin");
-    const etapaDatas = document.getElementById("etapaDatas");
-    const etapaExportacao = document.getElementById("etapaExportacao");
-    const statusAmbos = document.getElementById("statusAmbos");
     const dataInicial = document.getElementById("dataInicial");
     const dataFinal = document.getElementById("dataFinal");
-    const usuarioVitai = document.getElementById("usuarioVitai");
-    const senhaVitai = document.getElementById("senhaVitai");
-    const statusPorRelatorio = {
-      "emergencia-pacientes-registrados": document.getElementById("statusEmergencia"),
-      "internacao-altas": document.getElementById("statusInternacao")
-    };
+    const btnExportar = document.getElementById("btnExportar");
+    const mensagem = document.getElementById("mensagem");
+    const statusEmergencia = document.getElementById("statusEmergencia");
+    const statusInternacao = document.getElementById("statusInternacao");
+
     function dataLocalISO(data) {
       return data.getFullYear() + "-" + String(data.getMonth() + 1).padStart(2, "0") + "-" + String(data.getDate()).padStart(2, "0");
     }
-    const agora = new Date();
-    const inicioPadrao = new Date(agora);
-    const fimPadrao = new Date(agora);
-    if (agora.getDay() === 1) {
-      inicioPadrao.setDate(agora.getDate() - 4);
-      fimPadrao.setDate(agora.getDate() - 1);
-    } else {
-      inicioPadrao.setDate(agora.getDate() - 1);
-      fimPadrao.setDate(agora.getDate() - 1);
-    }
-    dataInicial.value = dataLocalISO(inicioPadrao);
-    dataFinal.value = dataLocalISO(fimPadrao);
 
-    btnAbrir.addEventListener("click", () => {
-      statusAcesso.textContent = "Abrindo o VITAI...";
-      // O acesso ao sistema é aberto diretamente pelo navegador.
-      // A extensão registra a aba quando o content script carrega no VITAI.
-      window.open("https://hiam.vitai.care/vitai/pages/login.do", "_blank", "noopener");
-      statusAcesso.textContent = "Aba do VITAI aberta. Faça o login manualmente.";
+    function carregarDatasPadrao() {
+      const hoje = new Date();
+      const inicio = new Date(hoje);
+      const fim = new Date(hoje);
+      if (hoje.getDay() === 1) {
+        inicio.setDate(hoje.getDate() - 4); // sexta-feira
+        fim.setDate(hoje.getDate() - 1);   // domingo
+      } else {
+        inicio.setDate(hoje.getDate() - 1);
+        fim.setDate(hoje.getDate() - 1);
+      }
+      dataInicial.value = dataLocalISO(inicio);
+      dataFinal.value = dataLocalISO(fim);
+    }
+
+    function mostrarMensagem(texto, tipo) {
+      mensagem.textContent = texto;
+      mensagem.className = "mensagem visivel " + (tipo || "sucesso");
+    }
+
+    function definirStatusRelatorios(textoEmergencia, textoInternacao) {
+      statusEmergencia.textContent = textoEmergencia;
+      statusInternacao.textContent = textoInternacao;
+    }
+
+    carregarDatasPadrao();
+    usuario.focus();
+
+    formLogin.addEventListener("submit", function(event) {
+      event.preventDefault();
+      const user = usuario.value.trim();
+      const pass = senha.value;
+      if (!user || !pass) {
+        statusLogin.textContent = "⚠️ Informe usuário e senha.";
+        statusLogin.className = "status erro";
+        return;
+      }
+      btnLogin.disabled = true;
+      statusLogin.textContent = "🟡 Abrindo o VITAI em segundo plano e verificando o login...";
+      statusLogin.className = "status";
+      window.postMessage({
+        origem: ORIGEM,
+        type: "VITAI_LOGIN_VITAI",
+        usuario: user,
+        senha: pass
+      }, location.origin);
+      senha.value = "";
     });
 
-    window.addEventListener("message", (event) => {
+    window.addEventListener("message", function(event) {
       if (event.source !== window || !event.data || event.data.origem !== "EXTENSAO_VITAI_HIAM") return;
       const resposta = event.data.resposta || {};
-      if (event.data.type === "VITAI_ABRIR_SISTEMA_RESPOSTA") {
-        statusAcesso.textContent = resposta.ok ? "Aba do VITAI aberta. Faça o login manualmente." : "O site foi aberto pelo navegador. Se necessário, verifique se a extensão está carregada.";
-      }
-      if (event.data.type === "VITAI_EXECUTAR_RELATORIO_RESPOSTA") {
-        const alvo = statusPorRelatorio[event.data.relatorio];
-        if (alvo) {
-          alvo.textContent = resposta.ok
-            ? (resposta.mensagem || "Exportação acionada.") + " Arquivo esperado: " + (resposta.nomeArquivo || "Excel") + ". " + (resposta.observacao || "")
-            : "Não foi possível executar: " + (resposta.erro || "erro desconhecido");
-        }
-      }
+
       if (event.data.type === "VITAI_LOGIN_VITAI_RESPOSTA") {
         btnLogin.disabled = false;
         if (resposta.ok) {
-          document.getElementById("etapaLogin").style.display = "none";
-          etapaDatas.style.display = "block";
-          etapaExportacao.style.display = "block";
-          statusLogin.textContent = resposta.mensagem || "Login concluído.";
-          statusAmbos.textContent = "Login concluído. Confira as datas e clique em Baixar os dois relatórios automaticamente.";
+          cardLogin.classList.add("oculto");
+          painel.classList.add("visivel");
+          statusLogin.textContent = resposta.mensagem || "Login confirmado.";
+          document.getElementById("statusPainel").textContent = "🟢 VITAI conectado — guia mantida em segundo plano";
         } else {
-          statusLogin.textContent = "Não foi possível entrar: " + (resposta.erro || "erro desconhecido");
+          statusLogin.textContent = "✕ " + (resposta.erro || "Não foi possível confirmar o login.");
+          statusLogin.className = "status erro";
         }
+        return;
       }
+
       if (event.data.type === "VITAI_PROGRESS") {
-        statusAmbos.textContent = event.data.texto || "A automação está trabalhando...";
+        mostrarMensagem(event.data.texto || "A automação está trabalhando...", "sucesso");
+        const texto = event.data.texto || "";
+        if (/Emergência|emergencia/i.test(texto)) statusEmergencia.textContent = texto;
+        if (/Internação|internacao/i.test(texto)) statusInternacao.textContent = texto;
+        return;
       }
+
       if (event.data.type === "VITAI_EXECUTAR_AMBOS_RESPOSTA") {
-        btnBaixarAmbos.disabled = false;
+        btnExportar.disabled = false;
+        btnExportar.textContent = "BAIXAR OS DOIS RELATÓRIOS";
         if (resposta.ok) {
-          const nomes = (resposta.resultados || []).map(item => item.nomeArquivo).join(" e ");
-          statusAmbos.textContent = (resposta.mensagem || "Exportação concluída.") + (nomes ? " Arquivos: " + nomes + "." : "");
+          definirStatusRelatorios("✅ Download confirmado.", "✅ Download confirmado.");
+          mostrarMensagem(resposta.mensagem || "Os dois relatórios foram baixados com sucesso.", "sucesso");
         } else {
-          const concluidos = (resposta.resultados || []).map(item => item.nomeArquivo).join(", ");
-          statusAmbos.textContent = "A automação parou: " + (resposta.erro || "erro desconhecido") +
-            (concluidos ? " Já concluído: " + concluidos + "." : "");
+          const resultados = resposta.resultados || [];
+          const emergenciaConcluida = resultados.some(item => item && item.nomeArquivo && /^Emergencia_/i.test(item.nomeArquivo));
+          const internacaoConcluida = resultados.some(item => item && item.nomeArquivo && /^Internacao_/i.test(item.nomeArquivo));
+          definirStatusRelatorios(
+            emergenciaConcluida ? "✅ Download confirmado." : "Não concluído nesta execução.",
+            internacaoConcluida ? "✅ Download confirmado." : "Não concluído nesta execução."
+          );
+          mostrarMensagem("A automação foi interrompida: " + (resposta.erro || "erro desconhecido") +
+            (resultados.length ? " Arquivo(s) concluído(s): " + resultados.map(item => item.nomeArquivo).join(", ") + "." : ""), "erro");
         }
       }
     });
 
-    btnLogin.addEventListener("click", () => {
-      const usuario = usuarioVitai.value.trim();
-      const senha = senhaVitai.value;
-      if (!usuario || !senha) { statusLogin.textContent = "Informe o usuário e a senha do VITAI."; return; }
-      btnLogin.disabled = true;
-      statusLogin.textContent = "Verificando o VITAI em segundo plano e tentando entrar...";
-      window.postMessage({ origem: ORIGEM, type: "VITAI_LOGIN_VITAI", usuario, senha }, location.origin);
-      senhaVitai.value = "";
-    });
-
-    btnBaixarAmbos.addEventListener("click", () => {
+    btnExportar.addEventListener("click", function() {
       const inicio = dataInicial.value;
       const fim = dataFinal.value;
-      if (!inicio || !fim) { statusAmbos.textContent = "Informe a data inicial e a data final."; return; }
-      if (inicio > fim) { statusAmbos.textContent = "A data inicial não pode ser posterior à data final."; return; }
-      btnBaixarAmbos.disabled = true;
-      statusAmbos.textContent = "Iniciando a automação. A aplicação permanecerá aberta enquanto o VITAI trabalha em segundo plano...";
+      if (!inicio || !fim) {
+        mostrarMensagem("Informe a data inicial e a data final.", "erro");
+        return;
+      }
+      if (inicio > fim) {
+        mostrarMensagem("A data inicial não pode ser posterior à data final.", "erro");
+        return;
+      }
+      btnExportar.disabled = true;
+      btnExportar.textContent = "EXPORTANDO...";
+      definirStatusRelatorios("Preparando Emergência...", "Aguardando a primeira exportação.");
+      mostrarMensagem("Iniciando a automação. A aplicação permanecerá aberta enquanto o VITAI trabalha em segundo plano...", "sucesso");
       window.postMessage({
         origem: ORIGEM,
         type: "VITAI_EXECUTAR_AMBOS",
@@ -260,88 +315,6 @@
         dataFinal: fim
       }, location.origin);
     });
-
-    document.querySelectorAll(".btnRelatorio").forEach((botao) => {
-      botao.disabled = true;
-      botao.textContent = "Usar botão de exportação conjunta acima";
-    });
-
-    let pastaSelecionada = null;
-    const DB_NOME = "AutomacaoVITAIHIAM";
-    const DB_STORE = "configuracoes";
-    const DB_CHAVE = "pastaRelatorios";
-
-    function abrirBanco() {
-      return new Promise((resolve, reject) => {
-        const req = indexedDB.open(DB_NOME, 1);
-        req.onupgradeneeded = () => {
-          if (!req.result.objectStoreNames.contains(DB_STORE)) req.result.createObjectStore(DB_STORE);
-        };
-        req.onsuccess = () => resolve(req.result);
-        req.onerror = () => reject(req.error);
-      });
-    }
-
-    async function guardarHandle(handle) {
-      const db = await abrirBanco();
-      return new Promise((resolve, reject) => {
-        const tx = db.transaction(DB_STORE, "readwrite");
-        tx.objectStore(DB_STORE).put(handle, DB_CHAVE);
-        tx.oncomplete = () => { db.close(); resolve(); };
-        tx.onerror = () => { db.close(); reject(tx.error); };
-      });
-    }
-
-    async function lerHandle() {
-      const db = await abrirBanco();
-      return new Promise((resolve, reject) => {
-        const tx = db.transaction(DB_STORE, "readonly");
-        const req = tx.objectStore(DB_STORE).get(DB_CHAVE);
-        req.onsuccess = () => { const valor = req.result || null; db.close(); resolve(valor); };
-        req.onerror = () => { db.close(); reject(req.error); };
-      });
-    }
-
-    async function verificarPermissao(handle, solicitar) {
-      const opcoes = { mode: "readwrite" };
-      let permissao = await handle.queryPermission(opcoes);
-      if (permissao !== "granted" && solicitar) permissao = await handle.requestPermission(opcoes);
-      return permissao === "granted";
-    }
-
-    btnPasta.addEventListener("click", async () => {
-      try {
-        if (!("showDirectoryPicker" in window)) {
-          statusPasta.textContent = "Este navegador não oferece seleção de pasta. Use uma versão atual do Chrome.";
-          return;
-        }
-        const handle = await window.showDirectoryPicker({ mode: "readwrite" });
-        if (!(await verificarPermissao(handle, true))) {
-          statusPasta.textContent = "A permissão de gravação não foi concedida.";
-          return;
-        }
-        await guardarHandle(handle);
-        pastaSelecionada = handle;
-        statusPasta.textContent = "Pasta selecionada: " + handle.name + ". A exportação será ativada quando os relatórios forem configurados.";
-      } catch (erro) {
-        if (erro.name === "AbortError") return;
-        statusPasta.textContent = "Não foi possível selecionar a pasta: " + erro.message;
-      }
-    });
-
-    (async () => {
-      try {
-        pastaSelecionada = await lerHandle();
-        if (pastaSelecionada) {
-          const ok = await verificarPermissao(pastaSelecionada, false);
-          statusPasta.textContent = ok
-            ? "Pasta cadastrada: " + pastaSelecionada.name
-            : "Pasta cadastrada: " + pastaSelecionada.name + ". Clique em Escolher pasta para autorizar novamente.";
-        }
-      } catch (erro) {
-        statusPasta.textContent = "Selecione a pasta de destino para começar.";
-      }
-    })();
   </script>
 </body>
 </html>
