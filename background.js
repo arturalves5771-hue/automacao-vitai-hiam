@@ -440,28 +440,55 @@ async function executarAmbos(message, sender, sendResponse) {
 }
 
 async function aguardarDownload(tabId, inicioMs, filename, limiteMs) {
-  const inicio = Date.now();
-  while (Date.now() - inicio < limiteMs) {
-    const itens = await chrome.downloads.search({ orderBy: ["-startTime"], limit: 30 });
-    const item = itens.find(d => {
+  const inicioEspera = Date.now();
+  const baseEsperada = filename.toLowerCase().replace(/\.xlsx$/i, "");
+  let ultimoDiagnostico = "";
+
+  while (Date.now() - inicioEspera < limiteMs) {
+    const itens = await chrome.downloads.search({ orderBy: ["-startTime"], limit: 50 });
+    const recentes = itens.filter(d => {
       const tempo = d.startTime ? Date.parse(d.startTime) : 0;
-      const nome = String(d.filename || "").replace(/^.*[\\\\/]/, "");
-      // Downloads de exportações/blob podem aparecer com tabId = -1 no Chrome.
-      // O nome e o horário do download são critérios mais confiáveis.
-      const nomeCorresponde = nome.toLowerCase() === filename.toLowerCase() ||
-        nome.toLowerCase() === "timedreportexport.xlsx" ||
-        nome.toLowerCase().endsWith(filename.toLowerCase());
-      return tempo >= inicioMs - 1000 && nomeCorresponde;
+      return tempo >= inicioMs - 2000;
     });
+
+    // Preferir o nome esperado; como alternativa, aceitar o nome original do VITAI
+    // ou qualquer XLSX iniciado durante esta etapa. Alguns downloads/blob do Chrome
+    // têm tabId = -1 ou recebem sufixos automáticos como (1).
+    const item = recentes.find(d => {
+      const nome = String(d.filename || "").split(/[\\\\/]/).pop().toLowerCase();
+      const url = String(d.url || "").toLowerCase();
+      const esperado = nome === filename.toLowerCase() || nome.endsWith(filename.toLowerCase()) ||
+        nome.startsWith(baseEsperada);
+      const originalVitai = nome === "timedreportexport.xlsx" ||
+        /timedreportexport/.test(url);
+      const planilha = /\.xlsx$/i.test(nome);
+      return esperado || originalVitai || planilha;
+    });
+
     if (item) {
-      if (item.state === "complete") return;
-      if (item.state === "interrupted") throw new Error("O download de " + filename + " foi interrompido.");
+      const nomeItem = String(item.filename || "").split(/[\\\\/]/).pop();
+      if (item.state === "complete") return { nomeArquivo: nomeItem, downloadId: item.id };
+      if (item.state === "interrupted") {
+        throw new Error("O download detectado (" + nomeItem + ") foi interrompido pelo Chrome.");
+      }
+      ultimoDiagnostico = "Arquivo detectado: " + nomeItem + " (estado: " + item.state + ").";
     }
+
     await new Promise(resolve => setTimeout(resolve, 500));
   }
-  throw new Error("A exportação foi acionada, mas o Chrome não confirmou o download de " + filename + " em 90 segundos.");
-}
 
+  const itensFinais = await chrome.downloads.search({ orderBy: ["-startTime"], limit: 15 });
+  const recentesFinais = itensFinais
+    .filter(d => d.startTime && Date.parse(d.startTime) >= inicioMs - 2000)
+    .map(d => {
+      const nome = String(d.filename || "").split(/[\\\\/]/).pop();
+      return nome + " [" + d.state + "]";
+    });
+  const detalhe = recentesFinais.length ? " Downloads recentes: " + recentesFinais.join("; ") :
+    (ultimoDiagnostico ? " " + ultimoDiagnostico : " Nenhum download recente foi listado pelo Chrome.");
+  throw new Error("O Chrome não confirmou a conclusão do download de " + filename + " em " +
+    Math.round(limiteMs / 1000) + " segundos." + detalhe);
+}
 async function executarRelatorioIndividual(message, sendResponse) {
   sendResponse({
     ok: false,
@@ -472,12 +499,13 @@ async function executarRelatorioIndividual(message, sendResponse) {
 chrome.downloads.onDeterminingFilename.addListener((item, suggest) => {
   chrome.storage.session.get("pendingDownload", (dados) => {
     const pendente = dados.pendingDownload;
-    const nomeOriginal = String(item.filename || "").split(/[\\/]/).pop();
+    const nomeOriginal = String(item.filename || "").split(/[\\\\/]/).pop();
     const idade = pendente ? Date.now() - Number(pendente.criadoEm || 0) : Infinity;
-    // A exportação do VITAI pode ser registrada sem tabId válido.
-    // Só renomeia o arquivo esperado enquanto uma exportação estiver pendente.
-    if (pendente && idade >= -1000 && idade < 120000 &&
-        nomeOriginal.toLowerCase() === "timedreportexport.xlsx") {
+    const parecePlanilhaVitai = /\.xlsx$/i.test(nomeOriginal) ||
+      /timedreportexport/i.test(String(item.url || ""));
+    // Durante a janela de exportação, renomeia a planilha produzida pelo VITAI.
+    // Não depende do tabId, que pode vir como -1 em downloads blob.
+    if (pendente && idade >= -1000 && idade < 120000 && parecePlanilhaVitai) {
       suggest({ filename: pendente.filename, conflictAction: "overwrite" });
       chrome.storage.session.remove("pendingDownload");
     } else {
