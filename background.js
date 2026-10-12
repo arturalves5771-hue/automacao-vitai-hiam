@@ -138,7 +138,7 @@ async function loginEExecutarAmbos(message, sender, sendResponse) {
           campos.find(el => el !== senhaInput && !/cpf|certificado|digital/.test(textoCampo(el)) &&
             (el.type === "text" || el.type === "email"));
         if (!senhaInput || !usuarioInput) {
-          if (document.querySelector("#treeview")) {
+          if (document.querySelector("#treeview") || document.querySelector("a[href*='report']")) {
             return { ok: true, jaLogado: true, mensagem: "Sessão do VITAI já parece estar aberta." };
           }
           return { ok: false, erro: "Não encontrei os campos de usuário e senha na página do VITAI. Confira se a tela de login está aberta." };
@@ -181,7 +181,7 @@ async function loginEExecutarAmbos(message, sender, sendResponse) {
         if (mensagemErro && /senha|usu.rio|inv.lid|incorret|falha|erro/i.test(mensagemErro)) {
           return { ok: false, erro: "O VITAI apresentou uma mensagem de login: " + mensagemErro.slice(0, 240) };
         }
-        if (!senha || document.querySelector("#treeview")) {
+        if (!senha || document.querySelector("#treeview") || document.querySelector("a[href*='report']")) {
           return { ok: true };
         }
         return { ok: false, erro: "A tela de login continua aberta. Confira o usuário e a senha e tente novamente." };
@@ -247,178 +247,103 @@ async function executarAmbos(message, sender, sendResponse) {
         func: async (args) => {
           const pausa = (ms) => new Promise(resolve => setTimeout(resolve, ms));
           const progresso = (texto) => window.postMessage({ origem: "VITAI_AUTOMACAO_PROGRESSO", texto }, location.origin);
-          const esperar = async (condicao, limite = 30000, descricao = "elemento") => {
-            const inicio = Date.now();
-            while (Date.now() - inicio < limite) {
-              try {
-                const valor = condicao();
-                if (valor) return valor;
-              } catch (_) {}
-              await pausa(250);
-            }
-            throw new Error("Tempo esgotado aguardando " + descricao + ".");
-          };
           const normalizar = (valor) => String(valor || "").normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").trim().toUpperCase();
 
           try {
-            const $ = window.jQuery;
-            if (!$) throw new Error("A biblioteca jQuery do VITAI não foi encontrada.");
+            progresso("Localizando o grupo " + args.grupo + " no menu...");
 
-            progresso("Abrindo a área de Relatórios no VITAI...");
-            let tree = $("#treeview").data("kendoTreeView");
-            if (!tree && typeof window.openWindow === "function") {
-              window.openWindow("3929", "reportcontainer.do", "/vitai");
-            }
-            tree = await esperar(() => $("#treeview").data("kendoTreeView"), 35000, "a árvore de relatórios");
-            progresso("Árvore de relatórios carregada. Localizando " + args.grupo + "...");
+            const clicarMenuLateral = async (textoAlvo) => {
+              const alvoNormalizado = normalizar(textoAlvo);
+              const elementos = Array.from(document.querySelectorAll("span, a, div, td"))
+                .filter(el => normalizar(el.textContent) === alvoNormalizado && el.offsetParent !== null);
 
-            // Função robusta para encontrar e clicar via DOM no Kendo TreeView
-            const clicarElementoArvore = async (textoProcurado) => {
-              const normalizadoAlvo = normalizar(textoProcurado);
-              let elemento = Array.from(document.querySelectorAll("#treeview .k-in, #treeview span, #treeview a"))
-                .find(el => normalizar(el.textContent) === normalizadoAlvo);
-
-              if (!elemento) {
-                elemento = Array.from(document.querySelectorAll("#treeview .k-in, #treeview span, #treeview a"))
-                  .find(el => normalizar(el.textContent).includes(normalizadoAlvo));
-              }
-
-              if (elemento) {
-                elemento.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              if (elementos.length > 0) {
+                const el = elementos[0];
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 await pausa(300);
-                ['mousedown', 'mouseup', 'click'].forEach(nomeEvento => {
-                  const evento = new MouseEvent(nomeEvento, {
-                    bubbles: true,
-                    cancelable: true,
-                    view: window
-                  });
-                  elemento.dispatchEvent(evento);
+                ['mousedown', 'mouseup', 'click'].forEach(tipo => {
+                  el.dispatchEvent(new MouseEvent(tipo, { bubbles: true, cancelable: true, view: window }));
                 });
                 return true;
               }
               return false;
             };
 
-            // 1. Clica no grupo (ex: EMERGÊNCIA)
-            progresso("Expandindo o grupo " + args.grupo + "...");
-            let clicouGrupo = await clicarElementoArvore(args.grupo);
-            if (!clicouGrupo && tree) {
-              tree.items().each(function() {
-                const item = tree.dataItem(this);
-                if (item && normalizar(item.text || item.TEXT) === normalizar(args.grupo)) {
-                  tree.expand($(this));
-                  clicouGrupo = true;
-                }
-              });
+            // 1. Clica no Grupo (ex: EMERGÊNCIA)
+            let clicouGrupo = await clicarMenuLateral(args.grupo);
+            if (!clicouGrupo) {
+              const spans = Array.from(document.querySelectorAll("span, a"));
+              const achado = spans.find(s => normalizar(s.textContent) === normalizar(args.grupo));
+              if (achado) {
+                achado.click();
+                clicouGrupo = true;
+              }
             }
-            if (!clicouGrupo) throw new Error("Não foi possível localizar o grupo " + args.grupo);
-            await pausa(1200);
+            if (!clicouGrupo) throw new Error("Não foi possível encontrar o grupo " + args.grupo);
+            await pausa(1000);
 
-            // 2. Clica no relatório específico (ex: Pacientes Registrados)
+            // 2. Clica no Relatório específico (ex: Pacientes Registrados)
             progresso("Selecionando o relatório " + args.nome + "...");
-            let clicouRelatorio = await clicarElementoArvore(args.nome);
-            if (!clicouRelatorio && tree) {
-              let itemEncontrado = null;
-              tree.items().each(function() {
-                const item = tree.dataItem(this);
-                if (item && normalizar(item.text || item.TEXT) === normalizar(args.nome)) {
-                  itemEncontrado = $(this);
-                }
-              });
-              if (itemEncontrado) {
-                tree.select(itemEncontrado);
-                tree.trigger("select", { node: itemEncontrado[0] });
+            let clicouRelatorio = await clicarMenuLateral(args.nome);
+            if (!clicouRelatorio) {
+              const itens = Array.from(document.querySelectorAll("span, a"));
+              const rel = itens.find(s => normalizar(s.textContent) === normalizar(args.nome));
+              if (rel) {
+                rel.click();
                 clicouRelatorio = true;
               }
             }
-            if (!clicouRelatorio) throw new Error("Não foi possível localizar o relatório " + args.nome);
+            if (!clicouRelatorio) throw new Error("Não foi possível encontrar o relatório " + args.nome);
 
-            progresso("Aguardando o VITAI carregar " + args.nome + "...");
-            const gradeAnterior = document.querySelector("#grid");
-            await esperar(() => {
-              const titulo = document.querySelector("#uiNomeRelatorio");
-              const gradeElemento = document.querySelector("#grid");
-              const gradeAtual = gradeElemento && $("#grid").data("kendoGrid");
-              if (!titulo || normalizar(titulo.textContent) !== normalizar(args.nome) ||
-                  !gradeElemento || !gradeAtual ||
-                  !document.querySelector("#uiDtInicial") || !document.querySelector("#uiDtFinal")) return false;
-              const leitura = gradeAtual.dataSource && gradeAtual.dataSource.transport &&
-                gradeAtual.dataSource.transport.options && gradeAtual.dataSource.transport.options.read;
-              const parametros = leitura && typeof leitura.data === "function" ? leitura.data() :
-                (leitura && leitura.data && typeof leitura.data === "object" ? leitura.data : null);
-              const datasource = String(parametros && parametros.datasourceId || "");
-              return gradeElemento !== gradeAnterior || datasource === String(args.datasourceId);
-            }, 30000, "a grade atualizada do relatório " + args.nome);
-
-            progresso("Relatório aberto. Configurando período e datas...");
-            const periodoInput = document.querySelector("#uiPeriodo") ||
-              document.querySelector("input[aria-owns='uiPeriodo_listbox']");
-            if (!periodoInput) throw new Error("Não encontrei o seletor de período do relatório.");
-
-            const periodo = $(periodoInput).data("kendoDropDownList") ||
-              $(periodoInput).data("kendoComboBox") ||
-              $(periodoInput).data("kendoMultiColumnComboBox");
-
-            if (periodo) {
-              const dados = periodo.dataSource && periodo.dataSource.data ? periodo.dataSource.data() : [];
-              let opcao = null;
-              let indice = -1;
-              for (let i = 0; i < dados.length; i++) {
-                const registro = dados[i];
-                const rotulo = registro.text || registro.TEXT || registro.nome || registro.NOME || "";
-                if (normalizar(rotulo) === "PERSONALIZADO") {
-                  opcao = registro;
-                  indice = i;
-                  break;
-                }
+            progresso("Aguardando a grade de dados carregar...");
+            const inicioEspera = Date.now();
+            while (Date.now() - inicioEspera < 25000) {
+              if (document.querySelector("#uiDtInicial") && document.querySelector("#uiDtFinal")) {
+                break;
               }
-              if (opcao) {
-                const valor = opcao.value !== undefined ? opcao.value :
-                  (opcao.VALUE !== undefined ? opcao.VALUE : opcao.id);
-                if (valor !== undefined && valor !== null) periodo.value(String(valor));
-                else periodo.select(indice);
-                periodo.trigger("change");
-              } else {
-                periodo.text("Personalizado");
-                periodo.trigger("change");
-              }
-            } else {
-              periodoInput.click();
-              const opcaoHtml = await esperar(() => {
-                const lista = document.querySelector("#uiPeriodo_listbox");
-                if (!lista) return null;
-                return Array.from(lista.querySelectorAll("li")).find(li => normalizar(li.textContent) === "PERSONALIZADO");
-              }, 5000, "a opção Personalizado");
-              opcaoHtml.click();
+              await pausa(500);
             }
 
-            await esperar(() => {
-              const a = document.querySelector("#uiDtInicial");
-              const b = document.querySelector("#uiDtFinal");
-              return a && b && !a.disabled && !b.disabled;
-            }, 10000, "a habilitação das datas no período Personalizado");
+            progresso("Configurando período e datas...");
+            const periodoInput = document.querySelector("#uiPeriodo") || document.querySelector("input[aria-owns='uiPeriodo_listbox']");
+            if (periodoInput) {
+              periodoInput.click();
+              await pausa(400);
+              const lis = Array.from(document.querySelectorAll("li")).filter(li => normalizar(li.textContent).includes("PERSONALIZADO"));
+              if (lis.length > 0) {
+                lis[0].click();
+              }
+            }
 
-            const converterData = (iso, hora, minuto, segundo) => {
-              const partes = iso.split("-").map(Number);
-              return new Date(partes[0], partes[1] - 1, partes[2], hora, minuto, segundo, 0);
-            };
-            const inicialInput = $("#uiDtInicial");
-            const finalInput = $("#uiDtFinal");
-            const widgetInicial = inicialInput.data("kendoDateTimePicker");
-            const widgetFinal = finalInput.data("kendoDateTimePicker");
+            await pausa(800);
+            const inicialInput = document.querySelector("#uiDtInicial");
+            const finalInput = document.querySelector("#uiDtFinal");
+            
+            if (!inicialInput || !finalInput) throw new Error("Os campos de data não ficaram visíveis.");
 
-            if (!widgetInicial || !widgetFinal) throw new Error("Os campos de data não foram inicializados pelo VITAI.");
+            const $ = window.jQuery;
+            if ($) {
+              const wIni = $(inicialInput).data("kendoDateTimePicker");
+              const wFim = $(finalInput).data("kendoDateTimePicker");
+              const partesIni = args.dataInicial.split("-").map(Number);
+              const partesFim = args.dataFinal.split("-").map(Number);
+              
+              if (wIni && wFim) {
+                wIni.value(new Date(partesIni[0], partesIni[1] - 1, partesIni[2], 0, 0, 0));
+                wIni.trigger("change");
+                wFim.value(new Date(partesFim[0], partesFim[1] - 1, partesFim[2], 23, 59, 59));
+                wFim.trigger("change");
+              } else {
+                inicialInput.value = args.dataInicial;
+                finalInput.value = args.dataFinal;
+              }
+            }
 
-            widgetInicial.value(converterData(args.dataInicial, 0, 0, 0));
-            widgetInicial.trigger("change");
-            widgetFinal.value(converterData(args.dataFinal, 23, 59, 59));
-            widgetFinal.trigger("change");
-
-            progresso("Datas preenchidas. Localizando o botão de exportação Excel...");
-            const botaoExcel = await esperar(() => document.querySelector("#grid .k-grid-excel") ||
-              document.querySelector(".k-grid-excel"), 10000, "o botão Exportar para Excel");
+            progresso("Acionando exportação para Excel...");
+            const botaoExcel = document.querySelector("#grid .k-grid-excel") || document.querySelector(".k-grid-excel");
+            if (!botaoExcel) throw new Error("Botão de exportar para Excel não foi encontrado.");
+            
             botaoExcel.click();
-            progresso("Botão Excel acionado para " + args.nome + ". Aguardando o Chrome iniciar o download...");
 
             return {
               ok: true,
@@ -426,7 +351,7 @@ async function executarAmbos(message, sender, sendResponse) {
               datasourceId: args.datasourceId,
               dataInicial: args.dataInicial,
               dataFinal: args.dataFinal,
-              mensagem: "Período Personalizado preenchido e exportação acionada."
+              mensagem: "Período preenchido e exportação iniciada com sucesso."
             };
           } catch (erro) {
             return { ok: false, erro: erro && erro.message ? erro.message : String(erro) };
