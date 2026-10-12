@@ -446,9 +446,12 @@ async function aguardarDownload(tabId, inicioMs, filename, limiteMs) {
     const item = itens.find(d => {
       const tempo = d.startTime ? Date.parse(d.startTime) : 0;
       const nome = String(d.filename || "").replace(/^.*[\\\\/]/, "");
-      return d.tabId === tabId && tempo >= inicioMs - 1000 &&
-        (nome === filename || nome.toLowerCase() === "timedreportexport.xlsx" ||
-         nome.toLowerCase().endsWith(filename.toLowerCase()));
+      // Downloads de exportações/blob podem aparecer com tabId = -1 no Chrome.
+      // O nome e o horário do download são critérios mais confiáveis.
+      const nomeCorresponde = nome.toLowerCase() === filename.toLowerCase() ||
+        nome.toLowerCase() === "timedreportexport.xlsx" ||
+        nome.toLowerCase().endsWith(filename.toLowerCase());
+      return tempo >= inicioMs - 1000 && nomeCorresponde;
     });
     if (item) {
       if (item.state === "complete") return;
@@ -470,7 +473,10 @@ chrome.downloads.onDeterminingFilename.addListener((item, suggest) => {
   chrome.storage.session.get("pendingDownload", (dados) => {
     const pendente = dados.pendingDownload;
     const nomeOriginal = String(item.filename || "").split(/[\\/]/).pop();
-    if (pendente && item.tabId === pendente.tabId &&
+    const idade = pendente ? Date.now() - Number(pendente.criadoEm || 0) : Infinity;
+    // A exportação do VITAI pode ser registrada sem tabId válido.
+    // Só renomeia o arquivo esperado enquanto uma exportação estiver pendente.
+    if (pendente && idade >= -1000 && idade < 120000 &&
         nomeOriginal.toLowerCase() === "timedreportexport.xlsx") {
       suggest({ filename: pendente.filename, conflictAction: "overwrite" });
       chrome.storage.session.remove("pendingDownload");
