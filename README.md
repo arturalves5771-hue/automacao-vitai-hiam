@@ -2,7 +2,7 @@
 
 Extensão local do Chrome para automatizar a exportação dos relatórios do VITAI HIAM.
 
-## Versão 0.6.1 — login, exportação conjunta e diagnóstico por etapas
+## Versão 0.6.2 — reconhecimento de downloads e exportação em sequência
 
 - A aplicação apresenta três etapas: informar usuário/senha, conferir o período e baixar os dois relatórios em sequência.
 - As credenciais são usadas apenas para preencher a tela de login e não são salvas pela aplicação.
@@ -12,6 +12,7 @@ Extensão local do Chrome para automatizar a exportação dos relatórios do VIT
 - Renomeia os arquivos para `Emergencia_YYYYMMDD.xlsx` e `Internacao_YYYYMMDD.xlsx` (para intervalos, inclui as duas datas).
 - Aguarda o Chrome confirmar cada download antes de passar ao segundo relatório.
 - Mostra em tempo real a etapa em que a automação está trabalhando, facilitando identificar onde uma execução para.
+- Reconhece os downloads mesmo quando o Chrome informa `tabId = -1` para o arquivo exportado, e mantém a sequência dos dois relatórios.
 
 IDs de datasource usados pelo sistema: Emergência `100563`; Internação `100556`.
 
