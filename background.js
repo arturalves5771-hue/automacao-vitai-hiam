@@ -253,33 +253,34 @@ async function executarAmbos(message, sender, sendResponse) {
             const $ = window.jQuery;
             progresso("Localizando o grupo " + args.grupo + " na árvore...");
 
-            // Tenta usar a API nativa do Kendo TreeView se disponível
-            let tree = $("#treeview").data("kendoTreeView");
             let clicouGrupo = false;
+            const spans = Array.from(document.querySelectorAll(".k-in"));
+            const alvoGrupo = spans.find(el => normalizar(el.textContent) === normalizar(args.grupo));
 
-            if (tree) {
+            if (alvoGrupo) {
+              alvoGrupo.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              await pausa(300);
+              alvoGrupo.click();
+              
+              const itemPai = alvoGrupo.closest("li, div");
+              if (itemPai) {
+                const seta = itemPai.querySelector(".k-i-expand");
+                if (seta) seta.click();
+              }
+              clicouGrupo = true;
+            }
+
+            if (!clicouGrupo && $ && $("#treeview").data("kendoTreeView")) {
+              const tree = $("#treeview").data("kendoTreeView");
               tree.items().each(function() {
                 const item = tree.dataItem(this);
                 if (item && normalizar(item.text || item.TEXT) === normalizar(args.grupo)) {
                   tree.expand($(this));
-                  // Dispara também o clique no elemento visual correspondente
                   const span = this.querySelector(".k-in");
                   if (span) span.click();
                   clicouGrupo = true;
                 }
               });
-            }
-
-            // Se o Kendo não pegou direto, varre os spans .k-in da árvore
-            if (!clicouGrupo) {
-              const spansKIn = Array.from(document.querySelectorAll(".k-in"));
-              const alvoGrupo = spansKIn.find(el => normalizar(el.textContent) === normalizar(args.grupo));
-              if (alvoGrupo) {
-                alvoGrupo.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                await pausa(300);
-                alvoGrupo.click();
-                clicouGrupo = true;
-              }
             }
 
             if (!clicouGrupo) throw new Error("Não foi possível encontrar ou expandir o grupo " + args.grupo);
@@ -288,32 +289,28 @@ async function executarAmbos(message, sender, sendResponse) {
             progresso("Selecionando o relatório " + args.nome + "...");
             let clicouRelatorio = false;
 
-            if (tree) {
-              let itemEncontrado = null;
+            const spansRel = Array.from(document.querySelectorAll(".k-in"));
+            const alvoRel = spansRel.find(el => normalizar(el.textContent) === normalizar(args.nome));
+
+            if (alvoRel) {
+              alvoRel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              await pausa(300);
+              alvoRel.click();
+              clicouRelatorio = true;
+            }
+
+            if (!clicouRelatorio && $ && $("#treeview").data("kendoTreeView")) {
+              const tree = $("#treeview").data("kendoTreeView");
               tree.items().each(function() {
                 const item = tree.dataItem(this);
                 if (item && normalizar(item.text || item.TEXT) === normalizar(args.nome)) {
-                  itemEncontrado = $(this);
+                  const span = this.querySelector(".k-in");
+                  if (span) {
+                    span.click();
+                    clicouRelatorio = true;
+                  }
                 }
               });
-              if (itemEncontrado) {
-                tree.select(itemEncontrado);
-                tree.trigger("select", { node: itemEncontrado[0] });
-                const spanRel = itemEncontrado[0].querySelector(".k-in");
-                if (spanRel) spanRel.click();
-                clicouRelatorio = true;
-              }
-            }
-
-            if (!clicouRelatorio) {
-              const spansKIn = Array.from(document.querySelectorAll(".k-in"));
-              const alvoRel = spansKIn.find(el => normalizar(el.textContent) === normalizar(args.nome));
-              if (alvoRel) {
-                alvoRel.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                await pausa(300);
-                alvoRel.click();
-                clicouRelatorio = true;
-              }
             }
 
             if (!clicouRelatorio) throw new Error("Não foi possível encontrar o relatório " + args.nome);
