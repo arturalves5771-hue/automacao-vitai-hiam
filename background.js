@@ -23,6 +23,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
+  if (message.type === "VITAI_PROGRESS_INTERNO") {
+    (async () => {
+      const dados = await chrome.storage.session.get("vitaiUiTabId");
+      const uiTabId = dados.vitaiUiTabId;
+      if (Number.isInteger(uiTabId)) {
+        try { await chrome.tabs.sendMessage(uiTabId, { type: "VITAI_PROGRESS", texto: String(message.texto || "") }); } catch (_) {}
+      }
+    })();
+    return;
+  }
+
   if (message.type === "VITAI_REGISTRAR_ABA") {
     if (sender.tab && Number.isInteger(sender.tab.id)) {
       vitaiTabId = sender.tab.id;
@@ -212,6 +223,7 @@ async function executarAmbos(message, sender, sendResponse) {
 
   const resultados = [];
   const uiTabId = sender && sender.tab && sender.tab.id;
+  if (Number.isInteger(uiTabId)) await chrome.storage.session.set({ vitaiUiTabId: uiTabId });
   const informar = async (texto) => {
     if (Number.isInteger(uiTabId)) {
       try { await chrome.tabs.sendMessage(uiTabId, { type: "VITAI_PROGRESS", texto }); } catch (_) {}
@@ -239,6 +251,7 @@ async function executarAmbos(message, sender, sendResponse) {
         }],
         func: async (args) => {
           const pausa = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+          const progresso = (texto) => window.postMessage({ origem: "VITAI_AUTOMACAO_PROGRESSO", texto }, location.origin);
           const esperar = async (condicao, limite = 30000, descricao = "elemento") => {
             const inicio = Date.now();
             while (Date.now() - inicio < limite) {
@@ -256,11 +269,13 @@ async function executarAmbos(message, sender, sendResponse) {
             const $ = window.jQuery;
             if (!$) throw new Error("A biblioteca jQuery do VITAI não foi encontrada.");
 
+            progresso("Abrindo a área de Relatórios no VITAI...");
             let tree = $("#treeview").data("kendoTreeView");
             if (!tree && typeof window.openWindow === "function") {
               window.openWindow("3929", "reportcontainer.do", "/vitai");
             }
             tree = await esperar(() => $("#treeview").data("kendoTreeView"), 35000, "a árvore de relatórios");
+            progresso("Árvore de relatórios carregada. Localizando " + args.grupo + "...");
 
             const acharItem = (texto) => {
               const procurado = normalizar(texto);
@@ -278,17 +293,20 @@ async function executarAmbos(message, sender, sendResponse) {
               grupo = await esperar(() => acharItem(args.grupo), 10000, "o grupo " + args.grupo);
             }
             tree.expand(grupo);
-            await pausa(500);
+            progresso("Grupo " + args.grupo + " localizado. Abrindo a lista de relatórios...");
+            await pausa(900);
 
             let itemRelatorio = acharItem(args.nome);
             if (!itemRelatorio) {
               itemRelatorio = await esperar(() => acharItem(args.nome), 12000, "o relatório " + args.nome);
             }
+            progresso("Relatório " + args.nome + " localizado. Abrindo...");
 
             const gradeAnterior = document.querySelector("#grid");
             tree.select(itemRelatorio);
             tree.trigger("select", { node: itemRelatorio[0] });
 
+            progresso("Aguardando o VITAI carregar " + args.nome + "...");
             await esperar(() => {
               const titulo = document.querySelector("#uiNomeRelatorio");
               const gradeElemento = document.querySelector("#grid");
@@ -304,6 +322,7 @@ async function executarAmbos(message, sender, sendResponse) {
               return gradeElemento !== gradeAnterior || datasource === String(args.datasourceId);
             }, 30000, "a grade atualizada do relatório " + args.nome);
 
+            progresso("Relatório aberto. Configurando período e datas...");
             const periodoInput = document.querySelector("#uiPeriodo") ||
               document.querySelector("input[aria-owns='uiPeriodo_listbox']");
             if (!periodoInput) throw new Error("Não encontrei o seletor de período do relatório.");
@@ -367,9 +386,11 @@ async function executarAmbos(message, sender, sendResponse) {
             widgetFinal.value(converterData(args.dataFinal, 23, 59, 59));
             widgetFinal.trigger("change");
 
+            progresso("Datas preenchidas. Localizando o botão de exportação Excel...");
             const botaoExcel = await esperar(() => document.querySelector("#grid .k-grid-excel") ||
               document.querySelector(".k-grid-excel"), 10000, "o botão Exportar para Excel");
             botaoExcel.click();
+            progresso("Botão Excel acionado para " + args.nome + ". Aguardando o Chrome iniciar o download...");
 
             return {
               ok: true,
