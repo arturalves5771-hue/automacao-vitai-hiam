@@ -250,49 +250,72 @@ async function executarAmbos(message, sender, sendResponse) {
           const normalizar = (valor) => String(valor || "").normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").trim().toUpperCase();
 
           try {
-            progresso("Localizando o grupo " + args.grupo + " no menu...");
+            const $ = window.jQuery;
+            progresso("Localizando o grupo " + args.grupo + " na árvore...");
 
-            const clicarMenuLateral = async (textoAlvo) => {
-              const alvoNormalizado = normalizar(textoAlvo);
-              const elementos = Array.from(document.querySelectorAll("span, a, div, td"))
-                .filter(el => normalizar(el.textContent) === alvoNormalizado && el.offsetParent !== null);
+            // Tenta usar a API nativa do Kendo TreeView se disponível
+            let tree = $("#treeview").data("kendoTreeView");
+            let clicouGrupo = false;
 
-              if (elementos.length > 0) {
-                const el = elementos[0];
-                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                await pausa(300);
-                ['mousedown', 'mouseup', 'click'].forEach(tipo => {
-                  el.dispatchEvent(new MouseEvent(tipo, { bubbles: true, cancelable: true, view: window }));
-                });
-                return true;
-              }
-              return false;
-            };
+            if (tree) {
+              tree.items().each(function() {
+                const item = tree.dataItem(this);
+                if (item && normalizar(item.text || item.TEXT) === normalizar(args.grupo)) {
+                  tree.expand($(this));
+                  // Dispara também o clique no elemento visual correspondente
+                  const span = this.querySelector(".k-in");
+                  if (span) span.click();
+                  clicouGrupo = true;
+                }
+              });
+            }
 
-            // 1. Clica no Grupo (ex: EMERGÊNCIA)
-            let clicouGrupo = await clicarMenuLateral(args.grupo);
+            // Se o Kendo não pegou direto, varre os spans .k-in da árvore
             if (!clicouGrupo) {
-              const spans = Array.from(document.querySelectorAll("span, a"));
-              const achado = spans.find(s => normalizar(s.textContent) === normalizar(args.grupo));
-              if (achado) {
-                achado.click();
+              const spansKIn = Array.from(document.querySelectorAll(".k-in"));
+              const alvoGrupo = spansKIn.find(el => normalizar(el.textContent) === normalizar(args.grupo));
+              if (alvoGrupo) {
+                alvoGrupo.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                await pausa(300);
+                alvoGrupo.click();
                 clicouGrupo = true;
               }
             }
-            if (!clicouGrupo) throw new Error("Não foi possível encontrar o grupo " + args.grupo);
-            await pausa(1000);
 
-            // 2. Clica no Relatório específico (ex: Pacientes Registrados)
+            if (!clicouGrupo) throw new Error("Não foi possível encontrar ou expandir o grupo " + args.grupo);
+            await pausa(1200);
+
             progresso("Selecionando o relatório " + args.nome + "...");
-            let clicouRelatorio = await clicarMenuLateral(args.nome);
-            if (!clicouRelatorio) {
-              const itens = Array.from(document.querySelectorAll("span, a"));
-              const rel = itens.find(s => normalizar(s.textContent) === normalizar(args.nome));
-              if (rel) {
-                rel.click();
+            let clicouRelatorio = false;
+
+            if (tree) {
+              let itemEncontrado = null;
+              tree.items().each(function() {
+                const item = tree.dataItem(this);
+                if (item && normalizar(item.text || item.TEXT) === normalizar(args.nome)) {
+                  itemEncontrado = $(this);
+                }
+              });
+              if (itemEncontrado) {
+                tree.select(itemEncontrado);
+                tree.trigger("select", { node: itemEncontrado[0] });
+                const spanRel = itemEncontrado[0].querySelector(".k-in");
+                if (spanRel) spanRel.click();
                 clicouRelatorio = true;
               }
             }
+
+            if (!clicouRelatorio) {
+              const spansKIn = Array.from(document.querySelectorAll(".k-in"));
+              const alvoRel = spansKIn.find(el => normalizar(el.textContent) === normalizar(args.nome));
+              if (alvoRel) {
+                alvoRel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                await pausa(300);
+                alvoRel.click();
+                clicouRelatorio = true;
+              }
+            }
+
             if (!clicouRelatorio) throw new Error("Não foi possível encontrar o relatório " + args.nome);
 
             progresso("Aguardando a grade de dados carregar...");
@@ -321,7 +344,6 @@ async function executarAmbos(message, sender, sendResponse) {
             
             if (!inicialInput || !finalInput) throw new Error("Os campos de data não ficaram visíveis.");
 
-            const $ = window.jQuery;
             if ($) {
               const wIni = $(inicialInput).data("kendoDateTimePicker");
               const wFim = $(finalInput).data("kendoDateTimePicker");
