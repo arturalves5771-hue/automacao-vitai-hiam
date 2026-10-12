@@ -100,7 +100,6 @@ async function loginEExecutarAmbos(message, sender, sendResponse) {
   const uiTabId = sender && sender.tab && sender.tab.id;
   let aba;
   try {
-    // Mantém a aplicação em primeiro plano; o VITAI fica em outra guia.
     if (Number.isInteger(uiTabId)) await chrome.tabs.update(uiTabId, { active: true });
     try {
       aba = await obterAbaVitai();
@@ -129,14 +128,11 @@ async function loginEExecutarAmbos(message, sender, sendResponse) {
       world: "MAIN",
       args: [{ usuario, senha }],
       func: async (credenciais) => {
-        const pausa = (ms) => new Promise(resolve => setTimeout(resolve, ms));
         const normalizar = (s) => String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
         const campos = Array.from(document.querySelectorAll("input:not([type=hidden]):not([type=submit]):not([type=button])"));
         const senhaInput = campos.find(el => el.type === "password" ||
           /senha|password|pass/.test(normalizar([el.name, el.id, el.autocomplete, el.placeholder].join(" "))));
         const textoCampo = (el) => normalizar([el.name, el.id, el.autocomplete, el.placeholder, el.getAttribute("aria-label")].join(" "));
-        // Prioriza o campo de usuário/login/matrícula. Não escolhe CPF primeiro,
-        // pois o VITAI também pode apresentar uma opção de certificado digital.
         const usuarioInput = campos.find(el => el !== senhaInput &&
           (/user|login|usuario|matricula/.test(textoCampo(el)) || el.autocomplete === "username")) ||
           campos.find(el => el !== senhaInput && !/cpf|certificado|digital/.test(textoCampo(el)) &&
@@ -159,7 +155,6 @@ async function loginEExecutarAmbos(message, sender, sendResponse) {
         const botoes = Array.from((form || document).querySelectorAll("button, input[type=submit], input[type=button]"));
         const botaoLogin = botoes.find(el => {
           const texto = normalizar(el.innerText || el.value || el.textContent || "");
-          // Nunca aciona a opção de certificado digital.
           return /entrar|acessar|login|autenticar/.test(texto) &&
             !/certificado|digital|cpf/.test(texto);
         });
@@ -277,36 +272,69 @@ async function executarAmbos(message, sender, sendResponse) {
             tree = await esperar(() => $("#treeview").data("kendoTreeView"), 35000, "a árvore de relatórios");
             progresso("Árvore de relatórios carregada. Localizando " + args.grupo + "...");
 
-            const acharItem = (texto) => {
-              const procurado = normalizar(texto);
-              let encontrado = null;
-              tree.items().each(function() {
-                if (encontrado) return;
-                const item = tree.dataItem(this);
-                if (item && normalizar(item.text || item.TEXT) === procurado) encontrado = $(this);
-              });
-              return encontrado;
+            // Função robusta para encontrar e clicar via DOM no Kendo TreeView
+            const clicarElementoArvore = async (textoProcurado) => {
+              const normalizadoAlvo = normalizar(textoProcurado);
+              let elemento = Array.from(document.querySelectorAll("#treeview .k-in, #treeview span, #treeview a"))
+                .find(el => normalizar(el.textContent) === normalizadoAlvo);
+
+              if (!elemento) {
+                elemento = Array.from(document.querySelectorAll("#treeview .k-in, #treeview span, #treeview a"))
+                  .find(el => normalizar(el.textContent).includes(normalizadoAlvo));
+              }
+
+              if (elemento) {
+                elemento.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                await pausa(300);
+                ['mousedown', 'mouseup', 'click'].forEach(nomeEvento => {
+                  const evento = new MouseEvent(nomeEvento, {
+                    bubbles: true,
+                    cancelable: true,
+                    view: window
+                  });
+                  elemento.dispatchEvent(evento);
+                });
+                return true;
+              }
+              return false;
             };
 
-            let grupo = acharItem(args.grupo);
-            if (!grupo) {
-              grupo = await esperar(() => acharItem(args.grupo), 10000, "o grupo " + args.grupo);
+            // 1. Clica no grupo (ex: EMERGÊNCIA)
+            progresso("Expandindo o grupo " + args.grupo + "...");
+            let clicouGrupo = await clicarElementoArvore(args.grupo);
+            if (!clicouGrupo && tree) {
+              tree.items().each(function() {
+                const item = tree.dataItem(this);
+                if (item && normalizar(item.text || item.TEXT) === normalizar(args.grupo)) {
+                  tree.expand($(this));
+                  clicouGrupo = true;
+                }
+              });
             }
-            tree.expand(grupo);
-            progresso("Grupo " + args.grupo + " localizado. Abrindo a lista de relatórios...");
-            await pausa(900);
+            if (!clicouGrupo) throw new Error("Não foi possível localizar o grupo " + args.grupo);
+            await pausa(1200);
 
-            let itemRelatorio = acharItem(args.nome);
-            if (!itemRelatorio) {
-              itemRelatorio = await esperar(() => acharItem(args.nome), 12000, "o relatório " + args.nome);
+            // 2. Clica no relatório específico (ex: Pacientes Registrados)
+            progresso("Selecionando o relatório " + args.nome + "...");
+            let clicouRelatorio = await clicarElementoArvore(args.nome);
+            if (!clicouRelatorio && tree) {
+              let itemEncontrado = null;
+              tree.items().each(function() {
+                const item = tree.dataItem(this);
+                if (item && normalizar(item.text || item.TEXT) === normalizar(args.nome)) {
+                  itemEncontrado = $(this);
+                }
+              });
+              if (itemEncontrado) {
+                tree.select(itemEncontrado);
+                tree.trigger("select", { node: itemEncontrado[0] });
+                clicouRelatorio = true;
+              }
             }
-            progresso("Relatório " + args.nome + " localizado. Abrindo...");
-
-            const gradeAnterior = document.querySelector("#grid");
-            tree.select(itemRelatorio);
-            tree.trigger("select", { node: itemRelatorio[0] });
+            if (!clicouRelatorio) throw new Error("Não foi possível localizar o relatório " + args.nome);
 
             progresso("Aguardando o VITAI carregar " + args.nome + "...");
+            const gradeAnterior = document.querySelector("#grid");
             await esperar(() => {
               const titulo = document.querySelector("#uiNomeRelatorio");
               const gradeElemento = document.querySelector("#grid");
@@ -451,9 +479,6 @@ async function aguardarDownload(tabId, inicioMs, filename, limiteMs) {
       return tempo >= inicioMs - 2000;
     });
 
-    // Preferir o nome esperado; como alternativa, aceitar o nome original do VITAI
-    // ou qualquer XLSX iniciado durante esta etapa. Alguns downloads/blob do Chrome
-    // têm tabId = -1 ou recebem sufixos automáticos como (1).
     const item = recentes.find(d => {
       const nome = String(d.filename || "").split(/[\\\\/]/).pop().toLowerCase();
       const url = String(d.url || "").toLowerCase();
@@ -489,6 +514,7 @@ async function aguardarDownload(tabId, inicioMs, filename, limiteMs) {
   throw new Error("O Chrome não confirmou a conclusão do download de " + filename + " em " +
     Math.round(limiteMs / 1000) + " segundos." + detalhe);
 }
+
 async function executarRelatorioIndividual(message, sendResponse) {
   sendResponse({
     ok: false,
@@ -503,8 +529,6 @@ chrome.downloads.onDeterminingFilename.addListener((item, suggest) => {
     const idade = pendente ? Date.now() - Number(pendente.criadoEm || 0) : Infinity;
     const parecePlanilhaVitai = /\.xlsx$/i.test(nomeOriginal) ||
       /timedreportexport/i.test(String(item.url || ""));
-    // Durante a janela de exportação, renomeia a planilha produzida pelo VITAI.
-    // Não depende do tabId, que pode vir como -1 em downloads blob.
     if (pendente && idade >= -1000 && idade < 120000 && parecePlanilhaVitai) {
       suggest({ filename: pendente.filename, conflictAction: "overwrite" });
       chrome.storage.session.remove("pendingDownload");
