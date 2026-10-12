@@ -131,7 +131,7 @@
         <label for="senha">Senha</label>
         <input type="password" id="senha" name="password" autocomplete="current-password" placeholder="Digite sua senha" required>
         <button type="submit" class="btn-login" id="btnLogin">ENTRAR NO VITAI</button>
-        <div class="nota">As credenciais são usadas somente durante a tentativa de login e não são armazenadas por esta página.</div>
+        <div class="nota">O navegador pode oferecer salvar o acesso do VITAI. A página não grava a senha em seu próprio armazenamento.</div>
       </form>
     </section>
 
@@ -244,7 +244,7 @@
         usuario: user,
         senha: pass
       }, location.origin);
-      senha.value = "";
+
     });
 
     window.addEventListener("message", function(event) {
