@@ -97,6 +97,13 @@
       overflow-wrap: anywhere;
     }
     .mensagem.visivel { display: block; }
+    .progresso-area { margin: 18px 0 22px; padding: 16px; background: #fff; border: 1px solid #dbeafe; border-radius: 12px; }
+    .progresso-topo { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; font-size: 13px; font-weight: bold; }
+    .progresso-trilho { width: 100%; height: 12px; background: #e5e7eb; border-radius: 999px; overflow: hidden; }
+    .progresso-barra { width: 0%; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #2563eb, #38bdf8); transition: width .45s ease; }
+    .progresso-etapa { margin-top: 9px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+    .progresso-area.concluido .progresso-barra { background: #16a34a; }
+    .progresso-area.com-erro .progresso-barra { background: #dc2626; }
     .relatorios { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
     .relatorio { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px; }
     .relatorio .tag {
@@ -124,14 +131,14 @@
       <form class="login-area" id="formLogin">
         <h1>Automação VITAI</h1>
         <div class="subtitulo">Acesso ao sistema e exportação dos relatórios utilizados pelo SAME Laudos.</div>
-        <div class="versao">Versão 0.6.4</div>
+        <div class="versao">Versão 0.6.6</div>
         <div class="status" id="statusLogin" role="status" aria-live="polite">🔴 VITAI desconectado</div>
         <label for="usuario">Usuário</label>
-        <input type="text" id="usuario" name="username" autocomplete="username" placeholder="Digite seu usuário do VITAI" required>
+        <input type="text" id="usuario" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="Digite seu usuário do VITAI" required>
         <label for="senha">Senha</label>
         <input type="password" id="senha" name="password" autocomplete="current-password" placeholder="Digite sua senha" required>
         <button type="submit" class="btn-login" id="btnLogin">ENTRAR NO VITAI</button>
-        <div class="nota">O navegador pode oferecer salvar o acesso do VITAI. A página não grava a senha em seu próprio armazenamento.</div>
+        <div class="nota">O usuário será lembrado neste navegador. Para a senha, use o Gerenciador de senhas do Chrome; a aplicação não guarda sua senha em texto simples.</div>
       </form>
     </section>
 
@@ -157,6 +164,11 @@
         <div class="mensagem visivel sucesso" id="mensagem" role="status" aria-live="polite">Pronto para exportar. A guia do VITAI permanecerá em segundo plano.</div>
       </section>
 
+      <section class="progresso-area" id="progressoArea" aria-label="Progresso da exportação">
+        <div class="progresso-topo"><span id="progressoTitulo">Progresso da exportação</span><span id="progressoPercentual">0%</span></div>
+        <div class="progresso-trilho" role="progressbar" id="progressoTrilho" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Progresso geral"><div class="progresso-barra" id="progressoBarra"></div></div>
+        <div class="progresso-etapa" id="progressoEtapa">Aguardando você iniciar a exportação.</div>
+      </section>
       <h2 class="titulo-painel">Relatórios incluídos</h2>
       <p class="descricao">Os dois relatórios serão processados em sequência. A automação só informa conclusão quando o Chrome confirmar os downloads.</p>
       <div class="relatorios">
@@ -193,6 +205,39 @@
     const mensagem = document.getElementById("mensagem");
     const statusEmergencia = document.getElementById("statusEmergencia");
     const statusInternacao = document.getElementById("statusInternacao");
+    const progressoArea = document.getElementById("progressoArea");
+    const progressoTitulo = document.getElementById("progressoTitulo");
+    const progressoPercentual = document.getElementById("progressoPercentual");
+    const progressoTrilho = document.getElementById("progressoTrilho");
+    const progressoBarra = document.getElementById("progressoBarra");
+    const progressoEtapa = document.getElementById("progressoEtapa");
+    let etapaAtual = 0, relatorioAtual = 0, progressoAtual = 0;
+    function atualizarProgresso(percentual, etapa, titulo) {
+      const valor = Math.max(progressoAtual, Math.min(100, Math.round(percentual)));
+      progressoAtual = valor;
+      progressoBarra.style.width = valor + "%";
+      progressoPercentual.textContent = valor + "%";
+      progressoTrilho.setAttribute("aria-valuenow", String(valor));
+      progressoEtapa.textContent = etapa || "";
+      if (titulo) progressoTitulo.textContent = titulo;
+    }
+    function progressoDaMensagem(texto) {
+      const t = String(texto || "").toLowerCase();
+      if (/preparando o próximo relatório|preparando o proximo relatorio|relatório pacientes registrados baixado|relatorio pacientes registrados baixado/.test(t)) {
+        relatorioAtual = 1; etapaAtual = 0;
+      } else if (/baixado|download confirmado|conclu[ií]da|conclu[ií]dos|finalizando a exporta/.test(t)) etapaAtual = Math.max(etapaAtual, 90);
+      else if (/aguardando o download|aguardando.*download/.test(t)) etapaAtual = Math.max(etapaAtual, 78);
+      else if (/exporta[cç][aã]o|excel|acionando exporta/.test(t)) etapaAtual = Math.max(etapaAtual, 65);
+      else if (/configurando per[ií]odo|configurando.*datas|aplicando.*datas/.test(t)) etapaAtual = Math.max(etapaAtual, 52);
+      else if (/pacientes registrados|altas hospitalares/.test(t)) etapaAtual = Math.max(etapaAtual, 35);
+      else if (/emerg[eê]ncia|interna[cç][aã]o|cdi|[aá]rvore|relat[oó]rios/.test(t)) etapaAtual = Math.max(etapaAtual, 18);
+      else etapaAtual = Math.max(etapaAtual, 8);
+      const base = relatorioAtual === 0 ? 0 : 50;
+      const faixa = relatorioAtual === 0 ? 50 : 49;
+      atualizarProgresso(base + etapaAtual / 100 * faixa, texto, relatorioAtual === 0 ? "Relatório 1 de 2 · Emergência" : "Relatório 2 de 2 · Internação");
+    }
+    function salvarUsuarioLocal(valor) { try { localStorage.setItem("vitai_usuario_salvo", valor); } catch (_) {} }
+    function carregarUsuarioLocal() { try { const salvo = localStorage.getItem("vitai_usuario_salvo"); if (salvo) usuario.value = salvo; } catch (_) {} }
 
     function dataLocalISO(data) {
       return data.getFullYear() + "-" + String(data.getMonth() + 1).padStart(2, "0") + "-" + String(data.getDate()).padStart(2, "0");
@@ -224,7 +269,8 @@
     }
 
     carregarDatasPadrao();
-    usuario.focus();
+    carregarUsuarioLocal();
+    if (!usuario.value) usuario.focus();
 
     formLogin.addEventListener("submit", function(event) {
       event.preventDefault();
@@ -235,6 +281,7 @@
         statusLogin.className = "status erro";
         return;
       }
+      salvarUsuarioLocal(user);
       btnLogin.disabled = true;
       statusLogin.textContent = "🟡 Abrindo o VITAI em segundo plano e verificando o login...";
       statusLogin.className = "status";
@@ -255,6 +302,7 @@
         if (resposta.ok) {
           cardLogin.classList.add("oculto");
           painel.classList.add("visivel");
+          atualizarProgresso(0, "Aguardando você iniciar a exportação.", "Progresso da exportação");
           statusLogin.textContent = resposta.mensagem || "Login confirmado.";
           document.getElementById("statusPainel").textContent = "🟢 VITAI conectado — guia mantida em segundo plano";
         } else {
@@ -267,6 +315,7 @@
       if (event.data.type === "VITAI_PROGRESS") {
         mostrarMensagem(event.data.texto || "A automação está trabalhando...", "sucesso");
         const texto = event.data.texto || "";
+        progressoDaMensagem(texto);
         if (/Emergência|emergencia/i.test(texto)) statusEmergencia.textContent = texto;
         if (/Internação|internacao/i.test(texto)) statusInternacao.textContent = texto;
         return;
@@ -276,9 +325,16 @@
         btnExportar.disabled = false;
         btnExportar.textContent = "BAIXAR OS DOIS RELATÓRIOS";
         if (resposta.ok) {
+          progressoAtual = 100;
+          atualizarProgresso(100, "Os dois arquivos foram baixados com sucesso.", "Exportação concluída");
+          progressoArea.classList.remove("com-erro");
+          progressoArea.classList.add("concluido");
           definirStatusRelatorios("✅ Download confirmado.", "✅ Download confirmado.");
           mostrarMensagem(resposta.mensagem || "Os dois relatórios foram baixados com sucesso.", "sucesso");
         } else {
+          progressoArea.classList.remove("concluido");
+          progressoArea.classList.add("com-erro");
+          atualizarProgresso(progressoAtual, "A exportação foi interrompida. Veja a mensagem de erro abaixo.", "Exportação interrompida");
           const resultados = resposta.resultados || [];
           const emergenciaConcluida = resultados.some(item => item && item.nomeArquivo && /^Emergencia_/i.test(item.nomeArquivo));
           const internacaoConcluida = resultados.some(item => item && item.nomeArquivo && /^Internacao_/i.test(item.nomeArquivo));
@@ -305,6 +361,9 @@
       }
       btnExportar.disabled = true;
       btnExportar.textContent = "EXPORTANDO...";
+      progressoAtual = 0; etapaAtual = 0; relatorioAtual = 0;
+      progressoArea.classList.remove("concluido", "com-erro");
+      atualizarProgresso(2, "Iniciando a automação...", "Relatório 1 de 2 · Emergência");
       definirStatusRelatorios("Preparando Emergência...", "Aguardando a primeira exportação.");
       mostrarMensagem("Iniciando a automação. A aplicação permanecerá aberta enquanto o VITAI trabalha em segundo plano...", "sucesso");
       window.postMessage({
