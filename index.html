@@ -1,466 +1,319 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Automação Vitai</title>
-    <style>
-        * {
-            box-sizing: border-box;
-        }
-
-        body {
-            margin: 0;
-            min-height: 100vh;
-            font-family: Arial, Helvetica, sans-serif;
-            background: #f3f6f4;
-            color: #1f2937;
-        }
-
-        .container {
-            width: min(900px, 92%);
-            margin: 50px auto;
-        }
-
-        .card {
-            background: white;
-            border-radius: 16px;
-            padding: 30px;
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
-        }
-
-        h1 {
-            margin: 0 0 8px 0;
-            color: #166534;
-            font-size: 30px;
-        }
-
-        .subtitulo {
-            margin-bottom: 30px;
-            color: #6b7280;
-        }
-
-        .status {
-            padding: 14px 18px;
-            border-radius: 10px;
-            background: #f3f4f6;
-            margin-bottom: 25px;
-            font-weight: bold;
-        }
-
-        .status.conectado {
-            background: #dcfce7;
-            color: #166534;
-        }
-
-        .status.erro {
-            background: #fee2e2;
-            color: #991b1b;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 7px;
-            font-weight: bold;
-        }
-
-        input {
-            width: 100%;
-            padding: 13px;
-            border: 1px solid #d1d5db;
-            border-radius: 8px;
-            font-size: 16px;
-            margin-bottom: 18px;
-        }
-
-        input:focus {
-            outline: none;
-            border-color: #16a34a;
-            box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.12);
-        }
-
-        button {
-            border: none;
-            border-radius: 9px;
-            padding: 13px 20px;
-            font-size: 15px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        .btn-login {
-            width: 100%;
-            background: #166534;
-            color: white;
-        }
-
-        .btn-login:hover {
-            background: #14532d;
-        }
-
-        .btn-login:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-
-        .painel {
-            display: none;
-        }
-
-        .painel.visivel {
-            display: block;
-        }
-
-        .titulo-painel {
-            font-size: 22px;
-            margin: 0 0 20px 0;
-        }
-
-        .exportacao {
-            border: 1px solid #e5e7eb;
-            border-radius: 12px;
-            padding: 22px;
-            background: #fafafa;
-        }
-
-        .datas {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 18px;
-        }
-
-        .btn-exportar {
-            margin-top: 5px;
-            background: #15803d;
-            color: white;
-            width: 100%;
-        }
-
-        .btn-exportar:hover {
-            background: #166534;
-        }
-
-        .btn-exportar:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-
-        .mensagem {
-            margin-top: 18px;
-            padding: 12px;
-            border-radius: 8px;
-            display: none;
-        }
-
-        .mensagem.sucesso {
-            display: block;
-            background: #dcfce7;
-            color: #166534;
-        }
-
-        .mensagem.erro {
-            display: block;
-            background: #fee2e2;
-            color: #991b1b;
-        }
-
-        .login-area {
-            max-width: 450px;
-            margin: auto;
-        }
-
-        .oculto {
-            display: none !important;
-        }
-
-        @media (max-width: 600px) {
-            .datas {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#1d4ed8">
+  <title>Automação VITAI HIAM</title>
+  <style>
+    * { box-sizing: border-box; }
+    :root {
+      --azul: #1d4ed8;
+      --azul-hover: #1e40af;
+      --fundo: #f0f6ff;
+      --texto: #1f2937;
+      --muted: #6b7280;
+      --borda: #cbd5e1;
+    }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      padding: 1px 0 30px;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--fundo);
+      color: var(--texto);
+    }
+    .container { width: min(900px, 92%); margin: 44px auto; }
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 30px;
+      box-shadow: 0 8px 30px rgba(0,0,0,.08);
+      border: 1px solid #e2e8f0;
+    }
+    h1 { margin: 0 0 8px; color: var(--azul); font-size: 30px; }
+    .subtitulo { margin-bottom: 25px; color: var(--muted); line-height: 1.5; }
+    .versao { margin-top: -15px; margin-bottom: 22px; color: #9ca3af; font-size: 13px; }
+    .status {
+      padding: 14px 16px;
+      border-radius: 10px;
+      background: #f1f5f9;
+      margin: 0 0 22px;
+      font-weight: 600;
+      font-size: 14px;
+      line-height: 1.5;
+      overflow-wrap: anywhere;
+    }
+    .status.conectado, .mensagem.sucesso { background: #dbeafe; color: #1e40af; }
+    .status.erro, .mensagem.erro { background: #fee2e2; color: #991b1b; }
+    label { display: block; margin-bottom: 7px; font-weight: bold; font-size: 14px; }
+    input {
+      width: 100%;
+      padding: 13px;
+      border: 1px solid var(--borda);
+      border-radius: 8px;
+      font: inherit;
+      font-size: 16px;
+      margin: 6px 0 18px;
+      background: #fff;
+      color: var(--texto);
+    }
+    input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,.15); }
+    button {
+      border: none;
+      border-radius: 9px;
+      padding: 13px 20px;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+      background: var(--azul);
+      color: #fff;
+    }
+    button:hover { background: var(--azul-hover); }
+    button:disabled { opacity: .6; cursor: not-allowed; }
+    .btn-login { width: 100%; }
+    .login-area { max-width: 450px; margin: auto; }
+    .painel { display: none; }
+    .painel.visivel { display: block; }
+    .titulo-painel { font-size: 21px; margin: 0 0 8px; }
+    .descricao { color: var(--muted); font-size: 14px; line-height: 1.55; margin: 0 0 20px; }
+    .exportacao {
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 22px;
+      background: #f8fafc;
+      margin-bottom: 18px;
+    }
+    .datas { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    .datas input { margin-bottom: 8px; }
+    .btn-exportar { margin-top: 8px; min-width: 210px; }
+    .mensagem {
+      margin-top: 18px;
+      padding: 12px;
+      border-radius: 8px;
+      display: none;
+      font-size: 14px;
+      line-height: 1.5;
+      overflow-wrap: anywhere;
+    }
+    .mensagem.visivel { display: block; }
+    .relatorios { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .relatorio { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px; }
+    .relatorio .tag {
+      display: inline-block; margin-bottom: 10px; padding: 5px 8px;
+      border-radius: 999px; background: #dbeafe; color: #1e40af;
+      font-size: 11px; font-weight: bold; letter-spacing: .04em;
+    }
+    .relatorio h3 { margin: 0 0 8px; font-size: 17px; }
+    .relatorio p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
+    .status-relatorio { margin-top: 12px; color: var(--muted); font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
+    .nota { margin-top: 18px; font-size: 12px; color: var(--muted); line-height: 1.5; }
+    .oculto { display: none !important; }
+    footer { text-align: center; color: var(--muted); font-size: 12px; margin: 24px 0 0; }
+    @media (max-width: 600px) {
+      .container { margin-top: 22px; }
+      .card { padding: 22px 18px; }
+      .datas, .relatorios { grid-template-columns: 1fr; gap: 8px; }
+      .btn-exportar { width: 100%; }
+    }
+  </style>
 </head>
-
 <body>
+  <main class="container">
+    <section class="card" id="cardLogin">
+      <form class="login-area" id="formLogin">
+        <h1>Automação VITAI</h1>
+        <div class="subtitulo">Acesso ao sistema e exportação dos relatórios utilizados pelo SAME Laudos.</div>
+        <div class="versao">Versão 0.6.3</div>
+        <div class="status" id="statusLogin" role="status" aria-live="polite">🔴 VITAI desconectado</div>
+        <label for="usuario">Usuário</label>
+        <input type="text" id="usuario" name="username" autocomplete="username" placeholder="Digite seu usuário do VITAI" required>
+        <label for="senha">Senha</label>
+        <input type="password" id="senha" name="password" autocomplete="current-password" placeholder="Digite sua senha" required>
+        <button type="submit" class="btn-login" id="btnLogin">ENTRAR NO VITAI</button>
+        <div class="nota">O navegador pode oferecer salvar o acesso do VITAI. A página não grava a senha em seu próprio armazenamento.</div>
+      </form>
+    </section>
 
-<div class="container">
+    <section class="card painel" id="painel">
+      <h1>Automação VITAI</h1>
+      <div class="subtitulo">Painel de automação · SAME Laudos</div>
+      <div class="status conectado" id="statusPainel" role="status" aria-live="polite">🟢 Login confirmado no VITAI</div>
 
-    <!-- FORMULÁRIO DE LOGIN -->
-    <div class="card" id="cardLogin">
-        <form class="login-area" id="formLogin">
-            <h1>Automação Vitai</h1>
-            <div class="subtitulo">Acesso ao sistema</div>
-            <div style="font-size: 13px; color: #9ca3af; margin-top: -20px; margin-bottom: 24px;">
-                Versão 2.1
-            </div>
-
-            <div class="status" id="status">
-                🔴 Vitai desconectado
-            </div>
-
-            <label for="usuario">Usuário</label>
-            <input type="text" id="usuario" name="username" autocomplete="username" placeholder="Digite seu usuário" required>
-
-            <label for="senha">Senha</label>
-            <input type="password" id="senha" name="password" autocomplete="current-password" placeholder="Digite sua senha" required>
-
-            <button type="submit" class="btn-login" id="btnLogin">
-                ENTRAR NO VITAI
-            </button>
-        </form>
-    </div>
-
-    <!-- PAINEL -->
-    <div class="card painel" id="painel">
-        <h1>Automação Vitai</h1>
-        <div class="subtitulo">Painel de automação</div>
-
-        <div class="status conectado" id="statusPainel">
-            🟢 Vitai conectado
+      <section class="exportacao">
+        <h2 class="titulo-painel">📅 Período dos relatórios</h2>
+        <p class="descricao">Confira as datas antes de iniciar. O VITAI receberá o primeiro dia às 00:00:00 e o último dia às 23:59:59.</p>
+        <div class="datas">
+          <div>
+            <label for="dataInicial">Data inicial</label>
+            <input type="date" id="dataInicial" required>
+          </div>
+          <div>
+            <label for="dataFinal">Data final</label>
+            <input type="date" id="dataFinal" required>
+          </div>
         </div>
+        <button class="btn-exportar" id="btnExportar" type="button">BAIXAR OS DOIS RELATÓRIOS</button>
+        <div class="mensagem visivel sucesso" id="mensagem" role="status" aria-live="polite">Pronto para exportar. A guia do VITAI permanecerá em segundo plano.</div>
+      </section>
 
-        <!-- PASTA DE DESTINO -->
-        <div class="exportacao" style="margin-bottom: 18px;">
-            <div class="titulo-painel">
-                📁 Pasta de destino dos Relatórios
-            </div>
+      <h2 class="titulo-painel">Relatórios incluídos</h2>
+      <p class="descricao">Os dois relatórios serão processados em sequência. A automação só informa conclusão quando o Chrome confirmar os downloads.</p>
+      <div class="relatorios">
+        <article class="relatorio">
+          <span class="tag">RELATÓRIO 01</span>
+          <h3>Emergência — Pacientes registrados</h3>
+          <p>Datasource 100563</p>
+          <div class="status-relatorio" id="statusEmergencia">Aguardando início da exportação.</div>
+        </article>
+        <article class="relatorio">
+          <span class="tag">RELATÓRIO 02</span>
+          <h3>Internação — Altas hospitalares</h3>
+          <p>Datasource 100556</p>
+          <div class="status-relatorio" id="statusInternacao">Aguardando início da exportação.</div>
+        </article>
+      </div>
+      <div class="nota">Os arquivos Excel são salvos na pasta de downloads configurada no Chrome. Para alterar o destino, ajuste as configurações de download do navegador.</div>
+    </section>
+    <footer>Automação VITAI HIAM · uso interno autorizado</footer>
+  </main>
 
-            <button class="btn-exportar" id="btnSelecionarPasta" type="button">
-                SELECIONAR PASTA
-            </button>
+  <script>
+    const ORIGEM = "AUTOMACAO_VITAI_HIAM";
+    const cardLogin = document.getElementById("cardLogin");
+    const formLogin = document.getElementById("formLogin");
+    const painel = document.getElementById("painel");
+    const usuario = document.getElementById("usuario");
+    const senha = document.getElementById("senha");
+    const btnLogin = document.getElementById("btnLogin");
+    const statusLogin = document.getElementById("statusLogin");
+    const dataInicial = document.getElementById("dataInicial");
+    const dataFinal = document.getElementById("dataFinal");
+    const btnExportar = document.getElementById("btnExportar");
+    const mensagem = document.getElementById("mensagem");
+    const statusEmergencia = document.getElementById("statusEmergencia");
+    const statusInternacao = document.getElementById("statusInternacao");
 
-            <div class="mensagem" id="statusPasta" style="display: block; margin-top: 12px;">
-                ⚠️ Nenhuma pasta configurada.
-            </div>
-        </div>
+    function dataLocalISO(data) {
+      return data.getFullYear() + "-" + String(data.getMonth() + 1).padStart(2, "0") + "-" + String(data.getDate()).padStart(2, "0");
+    }
 
-        <!-- EXPORTAÇÃO -->
-        <div class="exportacao">
-            <div class="titulo-painel">
-                📅 Exportação de Relatórios
-            </div>
+    function carregarDatasPadrao() {
+      const hoje = new Date();
+      const inicio = new Date(hoje);
+      const fim = new Date(hoje);
+      if (hoje.getDay() === 1) {
+        inicio.setDate(hoje.getDate() - 4); // sexta-feira
+        fim.setDate(hoje.getDate() - 1);   // domingo
+      } else {
+        inicio.setDate(hoje.getDate() - 1);
+        fim.setDate(hoje.getDate() - 1);
+      }
+      dataInicial.value = dataLocalISO(inicio);
+      dataFinal.value = dataLocalISO(fim);
+    }
 
-            <div class="datas">
-                <div>
-                    <label for="dataInicial">Data inicial</label>
-                    <input type="date" id="dataInicial">
-                </div>
+    function mostrarMensagem(texto, tipo) {
+      mensagem.textContent = texto;
+      mensagem.className = "mensagem visivel " + (tipo || "sucesso");
+    }
 
-                <div>
-                    <label for="dataFinal">Data final</label>
-                    <input type="date" id="dataFinal">
-                </div>
-            </div>
+    function definirStatusRelatorios(textoEmergencia, textoInternacao) {
+      statusEmergencia.textContent = textoEmergencia;
+      statusInternacao.textContent = textoInternacao;
+    }
 
-            <button class="btn-exportar" id="btnExportar" type="button">
-                EXECUTAR AUTOMAÇÃO (PA + ALTAS)
-            </button>
-
-            <div class="mensagem" id="mensagem"></div>
-        </div>
-    </div>
-
-</div>
-
-<script>
-const cardLogin = document.getElementById("cardLogin");
-const formLogin = document.getElementById("formLogin");
-const painel = document.getElementById("painel");
-const usuario = document.getElementById("usuario");
-const senha = document.getElementById("senha");
-const btnLogin = document.getElementById("btnLogin");
-const status = document.getElementById("status");
-const dataInicial = document.getElementById("dataInicial");
-const dataFinal = document.getElementById("dataFinal");
-const btnExportar = document.getElementById("btnExportar");
-const mensagem = document.getElementById("mensagem");
-const btnSelecionarPasta = document.getElementById("btnSelecionarPasta");
-const statusPasta = document.getElementById("statusPasta");
-
-let pastaVitai = null;
-const DB_NOME = "AutomacaoVitai";
-const DB_VERSAO = 1;
-const DB_STORE = "configuracoes";
-const DB_CHAVE_PASTA = "pastaVitai";
-
-document.addEventListener("DOMContentLoaded", async function () {
     carregarDatasPadrao();
-    if (usuario) usuario.focus();
-    await inicializarPastaVitai();
-});
+    usuario.focus();
 
-usuario.addEventListener("keydown", function (event) {
-    if (event.key === "Enter") {
-        event.preventDefault();
-        senha.focus();
-    }
-});
-
-function abrirBancoDados() {
-    return new Promise(function (resolve, reject) {
-        const request = indexedDB.open(DB_NOME, DB_VERSAO);
-        request.onupgradeneeded = function () {
-            const db = request.result;
-            if (!db.objectStoreNames.contains(DB_STORE)) db.createObjectStore(DB_STORE);
-        };
-        request.onsuccess = function () { resolve(request.result); };
-        request.onerror = function () { reject(request.error); };
-    });
-}
-
-async function salvarHandlePasta(handle) {
-    const db = await abrirBancoDados();
-    return new Promise(function (resolve, reject) {
-        const tx = db.transaction(DB_STORE, "readwrite");
-        tx.objectStore(DB_STORE).put(handle, DB_CHAVE_PASTA);
-        tx.oncomplete = function () { db.close(); resolve(); };
-        tx.onerror = function () { db.close(); reject(tx.error); };
-    });
-}
-
-async function carregarHandlePasta() {
-    const db = await abrirBancoDados();
-    return new Promise(function (resolve, reject) {
-        const tx = db.transaction(DB_STORE, "readonly");
-        const request = tx.objectStore(DB_STORE).get(DB_CHAVE_PASTA);
-        request.onsuccess = function () { db.close(); resolve(request.result || null); };
-        request.onerror = function () { db.close(); reject(request.error); };
-    });
-}
-
-async function verificarPermissaoPasta(handle, solicitar) {
-    if (!handle) return false;
-    const opcoes = { mode: "readwrite" };
-    try {
-        if (await handle.queryPermission(opcoes) === "granted") return true;
-        if (solicitar && await handle.requestPermission(opcoes) === "granted") return true;
-    } catch (erro) {}
-    return false;
-}
-
-function atualizarStatusPasta(texto, tipo) {
-    statusPasta.textContent = texto;
-    statusPasta.className = "mensagem " + (tipo || "");
-    statusPasta.style.display = "block";
-}
-
-async function inicializarPastaVitai() {
-    if (!window.showDirectoryPicker || !window.indexedDB) return;
-    try {
-        pastaVitai = await carregarHandlePasta();
-        if (!pastaVitai) return;
-        if (await verificarPermissaoPasta(pastaVitai, false)) {
-            atualizarStatusPasta("✅ Pasta configurada: " + pastaVitai.name, "sucesso");
-            btnSelecionarPasta.textContent = "ALTERAR PASTA";
-        } else {
-            atualizarStatusPasta("🔐 Clique em 'Autorizar pasta' para liberar.", "erro");
-            btnSelecionarPasta.textContent = "AUTORIZAR PASTA";
-        }
-    } catch (erro) {
-        pastaVitai = null;
-    }
-}
-
-btnSelecionarPasta.addEventListener("click", async function () {
-    try {
-        const novaPasta = await window.showDirectoryPicker({ mode: "readwrite" });
-        if (await verificarPermissaoPasta(novaPasta, true)) {
-            pastaVitai = novaPasta;
-            await salvarHandlePasta(pastaVitai);
-            atualizarStatusPasta("✅ Pasta configurada: " + pastaVitai.name, "sucesso");
-            btnSelecionarPasta.textContent = "ALTERAR PASTA";
-        }
-    } catch (erro) {}
-});
-
-function formatarDataISO(data) {
-    const ano = data.getFullYear();
-    const mes = String(data.getMonth() + 1).padStart(2, '0');
-    const dia = String(data.getDate()).padStart(2, '0');
-    return `${ano}-${mes}-${dia}`;
-}
-
-function carregarDatasPadrao() {
-    const ontem = new Date();
-    ontem.setDate(ontem.getDate() - 1);
-    dataInicial.value = formatarDataISO(ontem);
-    dataFinal.value = formatarDataISO(ontem);
-}
-
-formLogin.addEventListener("submit", function (event) {
-    event.preventDefault();
-    const user = usuario.value.trim();
-    const pass = senha.value;
-
-    if (!user || !pass) {
-        status.textContent = "⚠️ Informe usuário e senha.";
-        status.className = "status erro";
+    formLogin.addEventListener("submit", function(event) {
+      event.preventDefault();
+      const user = usuario.value.trim();
+      const pass = senha.value;
+      if (!user || !pass) {
+        statusLogin.textContent = "⚠️ Informe usuário e senha.";
+        statusLogin.className = "status erro";
         return;
-    }
+      }
+      btnLogin.disabled = true;
+      statusLogin.textContent = "🟡 Abrindo o VITAI em segundo plano e verificando o login...";
+      statusLogin.className = "status";
+      window.postMessage({
+        origem: ORIGEM,
+        type: "VITAI_LOGIN_VITAI",
+        usuario: user,
+        senha: pass
+      }, location.origin);
+    });
 
-    status.textContent = "🟡 Conectando ao Vitai...";
-    status.className = "status";
-    btnLogin.disabled = true;
+    window.addEventListener("message", function(event) {
+      if (event.source !== window || !event.data || event.data.origem !== "EXTENSAO_VITAI_HIAM") return;
+      const resposta = event.data.resposta || {};
 
-    window.postMessage({ type: "VITAI_LOGIN", username: user, password: pass }, "*");
-});
-
-window.addEventListener("message", function (event) {
-    if (event.source !== window || !event.data) return;
-
-    if (event.data.type === "LOGIN_VITAI_SUCESSO") {
-        cardLogin.classList.add("oculto");
-        painel.classList.add("visivel");
-    }
-    if (event.data.type === "LOGIN_VITAI_ERRO") {
-        status.textContent = "✕ " + (event.data.mensagem || "Login ou senha incorreto(s).");
-        status.className = "status erro";
+      if (event.data.type === "VITAI_LOGIN_VITAI_RESPOSTA") {
         btnLogin.disabled = false;
-    }
-    if (event.data.type === "EXPORTACAO_SUCESSO") {
-        btnExportar.disabled = false;
-        btnExportar.textContent = "EXECUTAR AUTOMAÇÃO (PA + ALTAS)";
-        mensagem.textContent = "✓ " + event.data.mensagem;
-        mensagem.className = "mensagem sucesso";
-    }
-    if (event.data.type === "EXPORTACAO_ERRO") {
-        btnExportar.disabled = false;
-        btnExportar.textContent = "EXECUTAR AUTOMAÇÃO (PA + ALTAS)";
-        mensagem.textContent = "✕ " + event.data.mensagem;
-        mensagem.className = "mensagem erro";
-    }
-});
-
-btnExportar.addEventListener("click", async function () {
-    if (!pastaVitai) {
-        alert("Selecione a pasta de destino antes de exportar.");
+        if (resposta.ok) {
+          cardLogin.classList.add("oculto");
+          painel.classList.add("visivel");
+          statusLogin.textContent = resposta.mensagem || "Login confirmado.";
+          document.getElementById("statusPainel").textContent = "🟢 VITAI conectado — guia mantida em segundo plano";
+        } else {
+          statusLogin.textContent = "✕ " + (resposta.erro || "Não foi possível confirmar o login.");
+          statusLogin.className = "status erro";
+        }
         return;
-    }
+      }
 
-    const inicial = dataInicial.value;
-    const final = dataFinal.value;
-
-    if (!inicial || !final) {
-        mensagem.textContent = "Informe a data inicial e a data final.";
-        mensagem.className = "mensagem erro";
+      if (event.data.type === "VITAI_PROGRESS") {
+        mostrarMensagem(event.data.texto || "A automação está trabalhando...", "sucesso");
+        const texto = event.data.texto || "";
+        if (/Emergência|emergencia/i.test(texto)) statusEmergencia.textContent = texto;
+        if (/Internação|internacao/i.test(texto)) statusInternacao.textContent = texto;
         return;
-    }
+      }
 
-    const [anoI, mesI, diaI] = inicial.split("-");
-    const [anoF, mesF, diaF] = final.split("-");
+      if (event.data.type === "VITAI_EXECUTAR_AMBOS_RESPOSTA") {
+        btnExportar.disabled = false;
+        btnExportar.textContent = "BAIXAR OS DOIS RELATÓRIOS";
+        if (resposta.ok) {
+          definirStatusRelatorios("✅ Download confirmado.", "✅ Download confirmado.");
+          mostrarMensagem(resposta.mensagem || "Os dois relatórios foram baixados com sucesso.", "sucesso");
+        } else {
+          const resultados = resposta.resultados || [];
+          const emergenciaConcluida = resultados.some(item => item && item.nomeArquivo && /^Emergencia_/i.test(item.nomeArquivo));
+          const internacaoConcluida = resultados.some(item => item && item.nomeArquivo && /^Internacao_/i.test(item.nomeArquivo));
+          definirStatusRelatorios(
+            emergenciaConcluidal ? "✅ Download confirmado." : "Não concluído nesta execução.",
+            internacaoConcluida ? "✅ Download confirmado." : "Não concluído nesta execução."
+          );
+          mostrarMensagem("A automação foi interrompida: " + (resposta.erro || "erro desconhecido") +
+            (resultados.length ? " Arquivo(s) concluído(s): " + resultados.map(item => item.nomeArquivo).join(", ") + "." : ""), "erro");
+        }
+      }
+    });
 
-    btnExportar.disabled = true;
-    btnExportar.textContent = "EXPORTANDO...";
-    mensagem.textContent = "⏳ Navegando pelo Vitai e gerando arquivos...";
-    mensagem.className = "mensagem sucesso";
-
-    window.postMessage({
-        type: "EXPORTAR_RELATORIOS",
-        dataInicial: `${diaI}/${mesI}/${anoI}`,
-        dataFinal: `${diaF}/${mesF}/${anoF}`
-    }, "*");
-});
-</script>
-
+    btnExportar.addEventListener("click", function() {
+      const inicio = dataInicial.value;
+      const fim = dataFinal.value;
+      if (!inicio || !fim) {
+        mostrarMensagem("Informe a data inicial e a data final.", "erro");
+        return;
+      }
+      if (inicio > fim) {
+        mostrarMensagem("A data inicial não pode ser posterior à data final.", "erro");
+        return;
+      }
+      btnExportar.disabled = true;
+      btnExportar.textContent = "EXPORTANDO...";
+      definirStatusRelatorios("Preparando Emergência...", "Aguardando a primeira exportação.");
+      mostrarMensagem("Iniciando a automação. A aplicação permanecerá aberta enquanto o VITAI trabalha em segundo plano...", "sucesso");
+      window.postMessage({
+        origem: ORIGEM,
+        type: "VITAI_EXECUTAR_AMBOS",
+        dataInicial: inicio,
+        dataFinal: fim
+      }, location.origin);
+    });
+  </script>
 </body>
 </html>

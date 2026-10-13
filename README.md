@@ -2,7 +2,7 @@
 
 Extensão local do Chrome para automatizar a exportação dos relatórios do VITAI HIAM.
 
-## Versão 2.0 — detecção flexível e diagnóstico dos downloads
+## Versão 0.6.3 — detecção flexível e diagnóstico dos downloads
 
 - A aplicação apresenta três etapas: informar usuário/senha, conferir o período e baixar os dois relatórios em sequência.
 - As credenciais são usadas apenas para preencher a tela de login e não são salvas pela aplicação.
