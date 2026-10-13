@@ -252,58 +252,83 @@ async function executarAmbos(message, sender, sendResponse) {
           try {
             const $ = window.jQuery;
 
-            // ETAPA ANTERIOR À ÁRVORE: Clica em "RELATÓRIOS" caso esteja na página inicial pós-login
-            progresso("Verificando acesso à seção de Relatórios...");
-            const linksRelatorios = Array.from(document.querySelectorAll("a, span"))
-              .filter(el => normalizar(el.textContent).includes("RELATORIOS"));
+            // NAVEGAÇÃO PELA ÁRVORE DE RELATÓRIOS
+            // Replica a sequência que funciona no Selenium: CDI -> EMERGÊNCIA -> relatório.
+            // Para internação: INTERNAÇÃO -> Altas Hospitalares.
+            const esperarElemento = async (seletor, limite = 20000) => {
+              const inicio = Date.now();
+              while (Date.now() - inicio < limite) {
+                const el = document.querySelector(seletor);
+                if (el) return el;
+                await pausa(250);
+              }
+              return null;
+            };
 
-            if (linksRelatorios.length > 0) {
-              const linkAlvo = linksRelatorios.find(el => el.closest("a") || el.tagName === "A");
-              const elParaClicar = linkAlvo ? (linkAlvo.closest("a") || linkAlvo) : linksRelatorios[0];
-              
-              elParaClicar.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              await pausa(300);
-              elParaClicar.click();
-              
+            const abrirRelatorios = async () => {
+              if (document.querySelector("#treeview")) return;
+              progresso("Abrindo a seção RELATÓRIOS...");
+              const links = Array.from(document.querySelectorAll("a, span, button"))
+                .filter(el => normalizar(el.textContent) === "RELATÓRIOS" || normalizar(el.textContent) === "RELATORIOS");
+              const link = links.find(el => el.tagName === "A") ||
+                links.find(el => el.closest("a"))?.closest("a") ||
+                links.find(el => el.tagName === "SPAN") ||
+                links[0];
+
+              if (link) {
+                link.scrollIntoView({ block: "center" });
+                link.click();
+                await pausa(500);
+              }
+
               if (typeof window.openWindow === "function") {
                 try { window.openWindow("3929", "reportcontainer.do", "/vitai"); } catch (_) {}
               }
-              await pausa(2000);
-            }
 
-            // ===== ETAPA IDÊNTICA AO PYTHON (CDI -> EMERGÊNCIA / INTERNAÇÃO) =====
-            if (normalizar(args.grupo).includes("EMERG")) {
-              progresso("Localizando CDI na árvore...");
-              const spansCdi = Array.from(document.querySelectorAll("span, div, a, li"))
-                .filter(el => normalizar(el.textContent) === "CDI" && el.children.length <= 2);
-              if (spansCdi.length > 0) {
-                spansCdi[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
-                await pausa(300);
-                spansCdi[0].click();
-                await pausa(2000);
+              const arvore = await esperarElemento("#treeview", 25000);
+              if (!arvore) {
+                throw new Error("A árvore de relatórios não carregou. Abra RELATÓRIOS no VITAI e tente novamente.");
               }
+            };
+
+            const localizarNo = async (rotulo, limite = 15000) => {
+              const desejado = normalizar(rotulo);
+              const inicio = Date.now();
+              while (Date.now() - inicio < limite) {
+                const arvore = document.querySelector("#treeview");
+                if (arvore) {
+                  // Prioriza os spans de texto do Kendo TreeView, evitando clicar em
+                  // contêineres-pai que repetem o texto de todos os descendentes.
+                  const candidatos = Array.from(arvore.querySelectorAll("span.k-in, span"))
+                    .filter(el => normalizar(el.textContent) === desejado && el.getClientRects().length > 0);
+                  if (candidatos.length) return candidatos[0];
+                }
+                await pausa(300);
+              }
+              return null;
+            };
+
+            const clicarNo = async (rotulo, descricao = rotulo) => {
+              progresso("Localizando " + descricao + " na árvore de relatórios...");
+              const no = await localizarNo(rotulo);
+              if (!no) throw new Error("Não foi possível localizar "" + rotulo + "" na árvore de relatórios.");
+              no.scrollIntoView({ block: "center" });
+              await pausa(150);
+              // Clique no próprio rótulo, como no script Selenium que funciona.
+              no.click();
+              await pausa(1200);
+            };
+
+            await abrirRelatorios();
+
+            if (normalizar(args.grupo).includes("EMERG")) {
+              await clicarNo("CDI", "CDI");
+              await clicarNo("EMERGÊNCIA", "EMERGÊNCIA");
+            } else {
+              await clicarNo(args.grupo, args.grupo);
             }
 
-            progresso("Localizando o grupo " + args.grupo + " na árvore...");
-            const elementosGrupo = Array.from(document.querySelectorAll("span, div, a, li"));
-            const alvoGrupo = elementosGrupo.find(el => normalizar(el.textContent) === normalizar(args.grupo) && el.children.length <= 2);
-            
-            if (!alvoGrupo) throw new Error("Não foi possível encontrar o grupo " + args.grupo);
-            
-            alvoGrupo.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            await pausa(300);
-            alvoGrupo.click();
-            await pausa(2000);
-
-            progresso("Selecionando o relatório " + args.nome + "...");
-            const elementosRel = Array.from(document.querySelectorAll("span, div, a, li"));
-            const alvoRel = elementosRel.find(el => normalizar(el.textContent) === normalizar(args.nome) && el.children.length <= 2);
-
-            if (!alvoRel) throw new Error("Não foi possível encontrar o relatório " + args.nome);
-
-            alvoRel.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            await pausa(300);
-            alvoRel.click();
+            await clicarNo(args.nome, args.nome);
 
             progresso("Aguardando a grade de dados carregar...");
             const inicioEspera = Date.now();
