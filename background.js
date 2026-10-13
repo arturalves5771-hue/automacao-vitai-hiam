@@ -474,29 +474,33 @@ async function executarAmbos(message, sender, sendResponse) {
 
 async function aguardarDownload(tabId, inicioMs, filename, limiteMs) {
   const inicioEspera = Date.now();
-  const baseEsperada = filename.toLowerCase().replace(/\.xlsx$/i, "");
+  const esperado = filename.toLowerCase();
   let ultimoDiagnostico = "";
 
+  const nomeBase = (caminho) => String(caminho || "").split(/[\\/]/).pop().toLowerCase();
+  const origemVitai = (item) => {
+    const url = String(item.url || "").toLowerCase();
+    return Number(item.tabId) === Number(tabId) ||
+      /(?:https?:\/\/|blob:https?:\/\/)hiam\.vitai\.care\//i.test(url) ||
+      /timedreportexport/i.test(url);
+  };
+
   while (Date.now() - inicioEspera < limiteMs) {
-    const itens = await chrome.downloads.search({ orderBy: ["-startTime"], limit: 50 });
-    const recentes = itens.filter(d => {
-      const tempo = d.startTime ? Date.parse(d.startTime) : 0;
-      return tempo >= inicioMs - 2000;
+    const itens = await chrome.downloads.search({ orderBy: ["-startTime"], limit: 100 });
+    const recentes = itens.filter(item => {
+      const tempo = item.startTime ? Date.parse(item.startTime) : 0;
+      return tempo >= inicioMs - 3000;
     });
 
-    const item = recentes.find(d => {
-      const nome = String(d.filename || "").split(/[\\\\/]/).pop().toLowerCase();
-      const url = String(d.url || "").toLowerCase();
-      const esperado = nome === filename.toLowerCase() || nome.endsWith("/" + filename.toLowerCase());
-      const originalVitai = nome === "timedreportexport.xlsx" || /timedreportexport/.test(url);
-      const origemVitai = Number(d.tabId) === Number(tabId) ||
-        /https:\/\/hiam\.vitai\.care\//i.test(url);
-      // Não aceitar qualquer XLSX: precisa corresponder ao nome esperado ou ao exportador do VITAI.
-      return origemVitai && (esperado || originalVitai);
-    });
+    // Primeiro procura o nome final; se o VITAI mantiver o nome temporário,
+    // aceita o exportador conhecido, mas não um XLSX antigo do histórico.
+    const item = recentes.find(d => nomeBase(d.filename) === esperado) ||
+      recentes.find(d => origemVitai(d) &&
+        (nomeBase(d.filename) === "timedreportexport.xlsx" ||
+         /timedreportexport/i.test(String(d.url || ""))));
 
     if (item) {
-      const nomeItem = String(item.filename || "").split(/[\\\\/]/).pop();
+      const nomeItem = String(item.filename || "").split(/[\\/]/).pop();
       if (item.state === "complete") return { nomeArquivo: nomeItem, downloadId: item.id };
       if (item.state === "interrupted") {
         throw new Error("O download detectado (" + nomeItem + ") foi interrompido pelo Chrome.");
@@ -504,16 +508,13 @@ async function aguardarDownload(tabId, inicioMs, filename, limiteMs) {
       ultimoDiagnostico = "Arquivo detectado: " + nomeItem + " (estado: " + item.state + ").";
     }
 
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise(resolve => setTimeout(resolve, 400));
   }
 
-  const itensFinais = await chrome.downloads.search({ orderBy: ["-startTime"], limit: 15 });
+  const itensFinais = await chrome.downloads.search({ orderBy: ["-startTime"], limit: 20 });
   const recentesFinais = itensFinais
-    .filter(d => d.startTime && Date.parse(d.startTime) >= inicioMs - 2000)
-    .map(d => {
-      const nome = String(d.filename || "").split(/[\\\\/]/).pop();
-      return nome + " [" + d.state + "]";
-    });
+    .filter(d => d.startTime && Date.parse(d.startTime) >= inicioMs - 3000)
+    .map(d => String(d.filename || "").split(/[\\/]/).pop() + " [" + d.state + "]");
   const detalhe = recentesFinais.length ? " Downloads recentes: " + recentesFinais.join("; ") :
     (ultimoDiagnostico ? " " + ultimoDiagnostico : " Nenhum download recente foi listado pelo Chrome.");
   throw new Error("O Chrome não confirmou a conclusão do download de " + filename + " em " +
@@ -530,18 +531,19 @@ async function executarRelatorioIndividual(message, sendResponse) {
 chrome.downloads.onDeterminingFilename.addListener((item, suggest) => {
   chrome.storage.session.get("pendingDownload", (dados) => {
     const pendente = dados.pendingDownload;
-    const nomeOriginal = String(item.filename || "").split(/[\\\\/]/).pop();
+    const nomeOriginal = String(item.filename || "").split(/[\\/]/).pop();
     const url = String(item.url || "").toLowerCase();
     const idade = pendente ? Date.now() - Number(pendente.criadoEm || 0) : Infinity;
     const origemVitai = pendente && (
       Number(item.tabId) === Number(pendente.tabId) ||
-      /https:\/\/hiam\.vitai\.care\//i.test(url) ||
+      /(?:https?:\/\/|blob:https?:\/\/)hiam\.vitai\.care\//i.test(url) ||
       /timedreportexport/i.test(url)
     );
-    const exportadorConhecido = /^timedreportexport(?:\\.xlsx)?$/i.test(nomeOriginal) ||
+    const exportadorConhecido = /^timedreportexport(?:\.xlsx)?$/i.test(nomeOriginal) ||
       /timedreportexport/i.test(url);
-    if (pendente && origemVitai && idade >= -1000 && idade < 120000 && exportadorConhecido) {
-      // Usa o nome planejado e substitui um arquivo que já exista.
+    const excel = /\.xlsx$/i.test(nomeOriginal) || exportadorConhecido;
+    if (pendente && origemVitai && excel && idade >= -1000 && idade < 120000) {
+      // Define o nome final e pede ao Chrome para substituir o arquivo existente.
       suggest({ filename: pendente.filename, conflictAction: "overwrite" });
       chrome.storage.session.remove("pendingDownload");
     } else {
