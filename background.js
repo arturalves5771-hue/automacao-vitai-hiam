@@ -368,7 +368,7 @@ async function executarAmbos(message, sender, sendResponse) {
             await abrirRelatorios();
 
             if (normalizar(args.grupo).includes("EMERG")) {
-              await clicarNo("CDI", "CDI");
+              // Pula o nó CDI e abre diretamente EMERGÊNCIA.
               await clicarNo("EMERGÊNCIA", "EMERGÊNCIA");
             } else {
               await clicarNo(args.grupo, args.grupo);
