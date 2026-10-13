@@ -1,8 +1,8 @@
 {
     "manifest_version": 3,
-    "name": "Automação Vitai HIAM",
-    "version": "2.0",
-    "description": "Automação de relatórios do Vitai HIAM com navegação em árvore e salvamento em rede.",
+    "name": "Automação Vitai",
+    "version": "2.1",
+    "description": "Automação de relatórios do Vitai HIAM.",
     "permissions": [
         "tabs",
         "storage",
