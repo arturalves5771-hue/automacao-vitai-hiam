@@ -247,31 +247,42 @@ async function executarAmbos(message, sender, sendResponse) {
         func: async (args) => {
           const pausa = (ms) => new Promise(resolve => setTimeout(resolve, ms));
           const progresso = (texto) => window.postMessage({ origem: "VITAI_AUTOMACAO_PROGRESSO", texto }, location.origin);
-          const normalizar = (valor) => String(valor || "").normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").trim().toUpperCase();
+          const normalizar = (valor) => String(valor || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase();
 
           try {
             const $ = window.jQuery;
-            progresso("Localizando o grupo " + args.grupo + " na árvore...");
 
-            let clicouGrupo = false;
-            const spans = Array.from(document.querySelectorAll(".k-in"));
-            const alvoGrupo = spans.find(el => normalizar(el.textContent) === normalizar(args.grupo));
+            // ETAPA ANTERIOR À ÁRVORE: Clica em "RELATÓRIOS" caso esteja na página inicial pós-login
+            progresso("Verificando acesso à seção de Relatórios...");
+            const linksRelatorios = Array.from(document.querySelectorAll("a, span"))
+              .filter(el => normalizar(el.textContent).includes("RELATORIOS"));
 
-            if (alvoGrupo) {
-              alvoGrupo.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              await pausa(300);
-              alvoGrupo.click();
+            if (linksRelatorios.length > 0) {
+              const linkAlvo = linksRelatorios.find(el => el.closest("a") || el.tagName === "A");
+              const elParaClicar = linkAlvo ? (linkAlvo.closest("a") || linkAlvo) : linksRelatorios[0];
               
-              const itemPai = alvoGrupo.closest("li, div");
-              if (itemPai) {
-                const seta = itemPai.querySelector(".k-i-expand");
-                if (seta) seta.click();
+              elParaClicar.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              await pausa(300);
+              elParaClicar.click();
+              
+              // Se houver função openWindow global do VITAI, tenta executá-la diretamente
+              if (typeof window.openWindow === "function") {
+                try { window.openWindow("3929", "reportcontainer.do", "/vitai"); } catch (_) {}
               }
-              clicouGrupo = true;
+              await pausa(2000);
             }
 
-            if (!clicouGrupo && $ && $("#treeview").data("kendoTreeView")) {
-              const tree = $("#treeview").data("kendoTreeView");
+            progresso("Localizando o grupo " + args.grupo + " na árvore...");
+
+            let tree = $("#treeview").data("kendoTreeView");
+            if (!tree && typeof $("#treeview").kendoTreeView === "function") {
+              tree = $("#treeview").data("kendoTreeView");
+            }
+
+            let clicouGrupo = false;
+
+            // 1. Tenta via API Kendo se o seletor existir
+            if (tree) {
               tree.items().each(function() {
                 const item = tree.dataItem(this);
                 if (item && normalizar(item.text || item.TEXT) === normalizar(args.grupo)) {
@@ -283,34 +294,55 @@ async function executarAmbos(message, sender, sendResponse) {
               });
             }
 
+            // 2. Se não encontrou via API, varre todos os elementos da página
+            if (!clicouGrupo) {
+              const elementos = Array.from(document.querySelectorAll("span, div, a, li"));
+              const alvo = elementos.find(el => normalizar(el.textContent) === normalizar(args.grupo) && el.children.length <= 2);
+              if (alvo) {
+                alvo.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                await pausa(300);
+                alvo.click();
+                const containerLi = alvo.closest("li");
+                if (containerLi) {
+                  const expandBtn = containerLi.querySelector(".k-i-expand, .k-icon");
+                  if (expandBtn) expandBtn.click();
+                }
+                clicouGrupo = true;
+              }
+            }
+
             if (!clicouGrupo) throw new Error("Não foi possível encontrar ou expandir o grupo " + args.grupo);
             await pausa(1200);
 
             progresso("Selecionando o relatório " + args.nome + "...");
             let clicouRelatorio = false;
 
-            const spansRel = Array.from(document.querySelectorAll(".k-in"));
-            const alvoRel = spansRel.find(el => normalizar(el.textContent) === normalizar(args.nome));
-
-            if (alvoRel) {
-              alvoRel.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              await pausa(300);
-              alvoRel.click();
-              clicouRelatorio = true;
-            }
-
-            if (!clicouRelatorio && $ && $("#treeview").data("kendoTreeView")) {
-              const tree = $("#treeview").data("kendoTreeView");
+            if (tree) {
+              let itemEncontrado = null;
               tree.items().each(function() {
                 const item = tree.dataItem(this);
                 if (item && normalizar(item.text || item.TEXT) === normalizar(args.nome)) {
-                  const span = this.querySelector(".k-in");
-                  if (span) {
-                    span.click();
-                    clicouRelatorio = true;
-                  }
+                  itemEncontrado = $(this);
                 }
               });
+              if (itemEncontrado) {
+                tree.select(itemEncontrado);
+                tree.trigger("select", { node: itemEncontrado[0] });
+                const spanRel = itemEncontrado[0].querySelector(".k-in");
+                if (spanRel) spanRel.click();
+                clicouRelatorio = true;
+              }
+            }
+
+            if (!clicouRelatorio) {
+              const elementos = Array.from(document.querySelectorAll("span, div, a, li"));
+              const alvoRel = elementos.find(el => normalizar(el.textContent) === normalizar(args.nome) && el.children.length <= 1);
+              if (alvoRel) {
+                alvoRel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                await pausa(300);
+                alvoRel.click();
+                clicouRelatorio = true;
+              }
             }
 
             if (!clicouRelatorio) throw new Error("Não foi possível encontrar o relatório " + args.nome);
