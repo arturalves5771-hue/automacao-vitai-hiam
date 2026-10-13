@@ -283,7 +283,7 @@
           const emergenciaConcluida = resultados.some(item => item && item.nomeArquivo && /^Emergencia_/i.test(item.nomeArquivo));
           const internacaoConcluida = resultados.some(item => item && item.nomeArquivo && /^Internacao_/i.test(item.nomeArquivo));
           definirStatusRelatorios(
-            emergenciaConcluidal ? "✅ Download confirmado." : "Não concluído nesta execução.",
+            emergenciaConcluida ? "✅ Download confirmado." : "Não concluído nesta execução.",
             internacaoConcluida ? "✅ Download confirmado." : "Não concluído nesta execução."
           );
           mostrarMensagem("A automação foi interrompida: " + (resposta.erro || "erro desconhecido") +
