@@ -490,7 +490,7 @@ async function aguardarDownload(tabId, inicioMs, filename, limiteMs) {
       const esperado = nome === filename.toLowerCase() || nome.endsWith("/" + filename.toLowerCase());
       const originalVitai = nome === "timedreportexport.xlsx" || /timedreportexport/.test(url);
       const origemVitai = Number(d.tabId) === Number(tabId) ||
-        /https:\\/\\/hiam\\.vitai\\.care\\//i.test(url);
+        /https:\/\/hiam\.vitai\.care\//i.test(url);
       // Não aceitar qualquer XLSX: precisa corresponder ao nome esperado ou ao exportador do VITAI.
       return origemVitai && (esperado || originalVitai);
     });
@@ -535,7 +535,7 @@ chrome.downloads.onDeterminingFilename.addListener((item, suggest) => {
     const idade = pendente ? Date.now() - Number(pendente.criadoEm || 0) : Infinity;
     const origemVitai = pendente && (
       Number(item.tabId) === Number(pendente.tabId) ||
-      /https:\\/\\/hiam\\.vitai\\.care\\//i.test(url) ||
+      /https:\/\/hiam\.vitai\.care\//i.test(url) ||
       /timedreportexport/i.test(url)
     );
     const exportadorConhecido = /^timedreportexport(?:\\.xlsx)?$/i.test(nomeOriginal) ||
