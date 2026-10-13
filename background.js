@@ -234,8 +234,54 @@ async function executarAmbos(message, sender, sendResponse) {
         pendingDownload: { tabId: aba.tabId, filename, criadoEm: inicioDownload }
       });
 
+      // A árvore do VITAI pode estar dentro de um frame. Primeiro abrimos
+      // RELATÓRIOS na página principal e depois identificamos o frame real.
+      let frameArvoreId = 0;
+      try {
+        const diagnosticoInicial = await chrome.scripting.executeScript({
+          target: { tabId: aba.tabId },
+          world: "MAIN",
+          func: () => {
+            if (document.querySelector("#treeview")) return true;
+            const normalizar = s => String(s || "").normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").trim().toUpperCase();
+            const candidatos = Array.from(document.querySelectorAll("a, span, button"))
+              .filter(el => ["RELATORIOS"].includes(normalizar(el.textContent)));
+            const link = candidatos.find(el => el.tagName === "A") ||
+              candidatos.find(el => el.closest("a"))?.closest("a") || candidatos[0];
+            if (link) { link.click(); }
+            if (typeof window.openWindow === "function") {
+              try { window.openWindow("3929", "reportcontainer.do", "/vitai"); } catch (_) {}
+            }
+            return false;
+          }
+        });
+      } catch (_) {}
+
+      const inicioBuscaFrame = Date.now();
+      let arvoreEncontrada = false;
+      while (Date.now() - inicioBuscaFrame < 25000) {
+        try {
+          const frames = await chrome.scripting.executeScript({
+            target: { tabId: aba.tabId, allFrames: true },
+            world: "MAIN",
+            func: () => ({ temArvore: !!document.querySelector("#treeview"), url: location.href })
+          });
+          const frame = frames.find(item => item.result && item.result.temArvore);
+          if (frame) {
+            frameArvoreId = frame.frameId;
+            arvoreEncontrada = true;
+            break;
+          }
+        } catch (_) {}
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+      if (!arvoreEncontrada) {
+        await informar("A tela RELATÓRIOS abriu, mas a árvore não foi encontrada em nenhum frame do VITAI.");
+        throw new Error("A árvore de relatórios não apareceu em nenhum frame da página. A automação parou antes de selecionar o relatório.");
+      }
+
       const execucao = await chrome.scripting.executeScript({
-        target: { tabId: aba.tabId },
+        target: { tabId: aba.tabId, frameIds: [frameArvoreId] },
         world: "MAIN",
         args: [{
           grupo: relatorio.grupo,
