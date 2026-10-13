@@ -1,4 +1,4 @@
-console.log("BACKGROUND VITAI HIAM INICIADO");
+console.log("BACKGROUND VITAI INICIADO");
 
 let abaNossaPagina = null;
 let abaVITAI = null;
@@ -143,21 +143,6 @@ chrome.runtime.onMessage.addListener(async function (message, sender) {
                 return;
             }
         }
-    }
-
-    if (message.type === "ARQUIVO_BAIXADO_PRONTO") {
-        const dados = await chrome.storage.session.get(["abaNossaPagina"]);
-        if (!dados.abaNossaPagina) return;
-
-        try {
-            await chrome.tabs.sendMessage(dados.abaNossaPagina, {
-                type: "GRAVAR_ARQUIVO_LOCAL",
-                dataUrl: message.dataUrl,
-                nomeArquivo: message.nomeArquivo,
-                tipoRelatorio: message.tipoRelatorio
-            });
-        } catch (e) {}
-        return;
     }
 
     if (message.type === "FLUXO_CONCLUIDO") {
