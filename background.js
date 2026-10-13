@@ -311,7 +311,7 @@ async function executarAmbos(message, sender, sendResponse) {
             const clicarNo = async (rotulo, descricao = rotulo) => {
               progresso("Localizando " + descricao + " na árvore de relatórios...");
               const no = await localizarNo(rotulo);
-              if (!no) throw new Error("Não foi possível localizar \\"" + rotulo + "\\" na árvore de relatórios.");
+              if (!no) throw new Error("Não foi possível localizar o rótulo " + rotulo + " na árvore de relatórios.");
               no.scrollIntoView({ block: "center" });
               await pausa(150);
               // Clique no próprio rótulo, como no script Selenium que funciona.
