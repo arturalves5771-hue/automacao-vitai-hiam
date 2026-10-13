@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Automação VITAI HIAM",
-  "version": "0.6.4",
+  "version": "0.6.5",
   "description": "Navega pelos relatórios do VITAI HIAM e exporta Emergência e Internação em sequência.",
   "permissions": ["tabs", "storage", "scripting", "downloads"],
   "host_permissions": ["https://hiam.vitai.care/*", "https://*.vercel.app/*"],
