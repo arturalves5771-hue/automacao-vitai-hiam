@@ -265,83 +265,92 @@ async function executarAmbos(message, sender, sendResponse) {
               await pausa(300);
               elParaClicar.click();
               
-              // Se houver função openWindow global do VITAI, tenta executá-la diretamente
               if (typeof window.openWindow === "function") {
                 try { window.openWindow("3929", "reportcontainer.do", "/vitai"); } catch (_) {}
               }
               await pausa(2000);
             }
 
+            // ===== SEÇÃO DE ÁRVORE ROBUSTA (EQUIVALENTE AO PYTHON) =====
             progresso("Localizando o grupo " + args.grupo + " na árvore...");
-
-            let tree = $("#treeview").data("kendoTreeView");
-            if (!tree && typeof $("#treeview").kendoTreeView === "function") {
-              tree = $("#treeview").data("kendoTreeView");
+            
+            // Garantir clique fixo em CDI caso o grupo seja EMERGÊNCIA
+            if (normalizar(args.grupo).includes("EMERG")) {
+              const spansCdi = Array.from(document.querySelectorAll("#treeview span, .k-treeview span, li span"))
+                .filter(el => normalizar(el.textContent) === "CDI");
+              for (const spanCdi of spansCdi) {
+                try {
+                  spanCdi.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  await pausa(300);
+                  spanCdi.click();
+                  await pausa(1500);
+                  break;
+                } catch (_) {}
+              }
             }
+
+            const spansGrupo = Array.from(document.querySelectorAll("#treeview span, .k-treeview span, li span"))
+              .filter(el => normalizar(el.textContent) === normalizar(args.grupo));
 
             let clicouGrupo = false;
-
-            // 1. Tenta via API Kendo se o seletor existir
-            if (tree) {
-              tree.items().each(function() {
-                const item = tree.dataItem(this);
-                if (item && normalizar(item.text || item.TEXT) === normalizar(args.grupo)) {
-                  tree.expand($(this));
-                  const span = this.querySelector(".k-in");
-                  if (span) span.click();
-                  clicouGrupo = true;
-                }
-              });
+            for (const span of spansGrupo) {
+              try {
+                span.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                await pausa(300);
+                span.click();
+                clicouGrupo = true;
+                break;
+              } catch (_) {}
             }
 
-            // 2. Se não encontrou via API, varre todos os elementos da página
             if (!clicouGrupo) {
-              const elementos = Array.from(document.querySelectorAll("span, div, a, li"));
-              const alvo = elementos.find(el => normalizar(el.textContent) === normalizar(args.grupo) && el.children.length <= 2);
-              if (alvo) {
-                alvo.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                await pausa(300);
-                alvo.click();
-                const containerLi = alvo.closest("li");
-                if (containerLi) {
-                  const expandBtn = containerLi.querySelector(".k-i-expand, .k-icon");
-                  if (expandBtn) expandBtn.click();
-                }
-                clicouGrupo = true;
+              const tree = $("#treeview").data("kendoTreeView");
+              if (tree) {
+                tree.items().each(function() {
+                  const item = tree.dataItem(this);
+                  if (item && normalizar(item.text || item.TEXT) === normalizar(args.grupo)) {
+                    tree.expand($(this));
+                    const span = this.querySelector(".k-in");
+                    if (span) { span.click(); clicouGrupo = true; }
+                  }
+                });
               }
             }
 
             if (!clicouGrupo) throw new Error("Não foi possível encontrar ou expandir o grupo " + args.grupo);
-            await pausa(1200);
+            await pausa(1500);
 
             progresso("Selecionando o relatório " + args.nome + "...");
-            let clicouRelatorio = false;
+            const spansRelatorio = Array.from(document.querySelectorAll("#treeview span, .k-treeview span, li span"))
+              .filter(el => normalizar(el.textContent) === normalizar(args.nome));
 
-            if (tree) {
-              let itemEncontrado = null;
-              tree.items().each(function() {
-                const item = tree.dataItem(this);
-                if (item && normalizar(item.text || item.TEXT) === normalizar(args.nome)) {
-                  itemEncontrado = $(this);
-                }
-              });
-              if (itemEncontrado) {
-                tree.select(itemEncontrado);
-                tree.trigger("select", { node: itemEncontrado[0] });
-                const spanRel = itemEncontrado[0].querySelector(".k-in");
-                if (spanRel) spanRel.click();
+            let clicouRelatorio = false;
+            for (const span of spansRelatorio) {
+              try {
+                span.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                await pausa(300);
+                span.click();
                 clicouRelatorio = true;
-              }
+                break;
+              } catch (_) {}
             }
 
             if (!clicouRelatorio) {
-              const elementos = Array.from(document.querySelectorAll("span, div, a, li"));
-              const alvoRel = elementos.find(el => normalizar(el.textContent) === normalizar(args.nome) && el.children.length <= 1);
-              if (alvoRel) {
-                alvoRel.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                await pausa(300);
-                alvoRel.click();
-                clicouRelatorio = true;
+              const tree = $("#treeview").data("kendoTreeView");
+              if (tree) {
+                let itemEncontrado = null;
+                tree.items().each(function() {
+                  const item = tree.dataItem(this);
+                  if (item && normalizar(item.text || item.TEXT) === normalizar(args.nome)) {
+                    itemEncontrado = $(this);
+                  }
+                });
+                if (itemEncontrado) {
+                  tree.select(itemEncontrado);
+                  tree.trigger("select", { node: itemEncontrado[0] });
+                  const spanRel = itemEncontrado[0].querySelector(".k-in");
+                  if (spanRel) { spanRel.click(); clicouRelatorio = true; }
+                }
               }
             }
 
