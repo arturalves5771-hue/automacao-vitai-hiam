@@ -487,12 +487,12 @@ async function aguardarDownload(tabId, inicioMs, filename, limiteMs) {
     const item = recentes.find(d => {
       const nome = String(d.filename || "").split(/[\\\\/]/).pop().toLowerCase();
       const url = String(d.url || "").toLowerCase();
-      const esperado = nome === filename.toLowerCase() || nome.endsWith(filename.toLowerCase()) ||
-        nome.startsWith(baseEsperada);
-      const originalVitai = nome === "timedreportexport.xlsx" ||
-        /timedreportexport/.test(url);
-      const planilha = /\.xlsx$/i.test(nome);
-      return esperado || originalVitai || planilha;
+      const esperado = nome === filename.toLowerCase() || nome.endsWith("/" + filename.toLowerCase());
+      const originalVitai = nome === "timedreportexport.xlsx" || /timedreportexport/.test(url);
+      const origemVitai = Number(d.tabId) === Number(tabId) ||
+        /https:\\/\\/hiam\\.vitai\\.care\\//i.test(url);
+      // Não aceitar qualquer XLSX: precisa corresponder ao nome esperado ou ao exportador do VITAI.
+      return origemVitai && (esperado || originalVitai);
     });
 
     if (item) {
@@ -531,10 +531,17 @@ chrome.downloads.onDeterminingFilename.addListener((item, suggest) => {
   chrome.storage.session.get("pendingDownload", (dados) => {
     const pendente = dados.pendingDownload;
     const nomeOriginal = String(item.filename || "").split(/[\\\\/]/).pop();
+    const url = String(item.url || "").toLowerCase();
     const idade = pendente ? Date.now() - Number(pendente.criadoEm || 0) : Infinity;
-    const parecePlanilhaVitai = /\.xlsx$/i.test(nomeOriginal) ||
-      /timedreportexport/i.test(String(item.url || ""));
-    if (pendente && idade >= -1000 && idade < 120000 && parecePlanilhaVitai) {
+    const origemVitai = pendente && (
+      Number(item.tabId) === Number(pendente.tabId) ||
+      /https:\\/\\/hiam\\.vitai\\.care\\//i.test(url) ||
+      /timedreportexport/i.test(url)
+    );
+    const exportadorConhecido = /^timedreportexport(?:\\.xlsx)?$/i.test(nomeOriginal) ||
+      /timedreportexport/i.test(url);
+    if (pendente && origemVitai && idade >= -1000 && idade < 120000 && exportadorConhecido) {
+      // Usa o nome planejado e substitui um arquivo que já exista.
       suggest({ filename: pendente.filename, conflictAction: "overwrite" });
       chrome.storage.session.remove("pendingDownload");
     } else {
