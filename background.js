@@ -271,90 +271,39 @@ async function executarAmbos(message, sender, sendResponse) {
               await pausa(2000);
             }
 
-            // ===== SEÇÃO DE ÁRVORE ROBUSTA (EQUIVALENTE AO PYTHON) =====
-            progresso("Localizando o grupo " + args.grupo + " na árvore...");
-            
-            // Garantir clique fixo em CDI caso o grupo seja EMERGÊNCIA
+            // ===== ETAPA IDÊNTICA AO PYTHON (CDI -> EMERGÊNCIA / INTERNAÇÃO) =====
             if (normalizar(args.grupo).includes("EMERG")) {
-              const spansCdi = Array.from(document.querySelectorAll("#treeview span, .k-treeview span, li span"))
-                .filter(el => normalizar(el.textContent) === "CDI");
-              for (const spanCdi of spansCdi) {
-                try {
-                  spanCdi.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                  await pausa(300);
-                  spanCdi.click();
-                  await pausa(1500);
-                  break;
-                } catch (_) {}
-              }
-            }
-
-            const spansGrupo = Array.from(document.querySelectorAll("#treeview span, .k-treeview span, li span"))
-              .filter(el => normalizar(el.textContent) === normalizar(args.grupo));
-
-            let clicouGrupo = false;
-            for (const span of spansGrupo) {
-              try {
-                span.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              progresso("Localizando CDI na árvore...");
+              const spansCdi = Array.from(document.querySelectorAll("span, div, a, li"))
+                .filter(el => normalizar(el.textContent) === "CDI" && el.children.length <= 2);
+              if (spansCdi.length > 0) {
+                spansCdi[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
                 await pausa(300);
-                span.click();
-                clicouGrupo = true;
-                break;
-              } catch (_) {}
-            }
-
-            if (!clicouGrupo) {
-              const tree = $("#treeview").data("kendoTreeView");
-              if (tree) {
-                tree.items().each(function() {
-                  const item = tree.dataItem(this);
-                  if (item && normalizar(item.text || item.TEXT) === normalizar(args.grupo)) {
-                    tree.expand($(this));
-                    const span = this.querySelector(".k-in");
-                    if (span) { span.click(); clicouGrupo = true; }
-                  }
-                });
+                spansCdi[0].click();
+                await pausa(2000);
               }
             }
 
-            if (!clicouGrupo) throw new Error("Não foi possível encontrar ou expandir o grupo " + args.grupo);
-            await pausa(1500);
+            progresso("Localizando o grupo " + args.grupo + " na árvore...");
+            const elementosGrupo = Array.from(document.querySelectorAll("span, div, a, li"));
+            const alvoGrupo = elementosGrupo.find(el => normalizar(el.textContent) === normalizar(args.grupo) && el.children.length <= 2);
+            
+            if (!alvoGrupo) throw new Error("Não foi possível encontrar o grupo " + args.grupo);
+            
+            alvoGrupo.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            await pausa(300);
+            alvoGrupo.click();
+            await pausa(2000);
 
             progresso("Selecionando o relatório " + args.nome + "...");
-            const spansRelatorio = Array.from(document.querySelectorAll("#treeview span, .k-treeview span, li span"))
-              .filter(el => normalizar(el.textContent) === normalizar(args.nome));
+            const elementosRel = Array.from(document.querySelectorAll("span, div, a, li"));
+            const alvoRel = elementosRel.find(el => normalizar(el.textContent) === normalizar(args.nome) && el.children.length <= 2);
 
-            let clicouRelatorio = false;
-            for (const span of spansRelatorio) {
-              try {
-                span.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                await pausa(300);
-                span.click();
-                clicouRelatorio = true;
-                break;
-              } catch (_) {}
-            }
+            if (!alvoRel) throw new Error("Não foi possível encontrar o relatório " + args.nome);
 
-            if (!clicouRelatorio) {
-              const tree = $("#treeview").data("kendoTreeView");
-              if (tree) {
-                let itemEncontrado = null;
-                tree.items().each(function() {
-                  const item = tree.dataItem(this);
-                  if (item && normalizar(item.text || item.TEXT) === normalizar(args.nome)) {
-                    itemEncontrado = $(this);
-                  }
-                });
-                if (itemEncontrado) {
-                  tree.select(itemEncontrado);
-                  tree.trigger("select", { node: itemEncontrado[0] });
-                  const spanRel = itemEncontrado[0].querySelector(".k-in");
-                  if (spanRel) { spanRel.click(); clicouRelatorio = true; }
-                }
-              }
-            }
-
-            if (!clicouRelatorio) throw new Error("Não foi possível encontrar o relatório " + args.nome);
+            alvoRel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            await pausa(300);
+            alvoRel.click();
 
             progresso("Aguardando a grade de dados carregar...");
             const inicioEspera = Date.now();
