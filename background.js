@@ -243,7 +243,7 @@ async function executarAmbos(message, sender, sendResponse) {
           world: "MAIN",
           func: () => {
             if (document.querySelector("#treeview")) return true;
-            const normalizar = s => String(s || "").normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").trim().toUpperCase();
+            const normalizar = s => String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase();
             const candidatos = Array.from(document.querySelectorAll("a, span, button"))
               .filter(el => ["RELATORIOS"].includes(normalizar(el.textContent)));
             const link = candidatos.find(el => el.tagName === "A") ||
