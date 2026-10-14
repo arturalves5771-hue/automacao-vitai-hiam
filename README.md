@@ -2,10 +2,10 @@
 
 Extensão local do Chrome para automatizar a exportação dos relatórios do VITAI HIAM.
 
-## Versão 0.6.3 — detecção flexível e diagnóstico dos downloads
+## Versão 0.6.8 — credenciais locais opcionais e download com substituição
 
 - A aplicação apresenta três etapas: informar usuário/senha, conferir o período e baixar os dois relatórios em sequência.
-- As credenciais são usadas apenas para preencher a tela de login e não são salvas pela aplicação.
+- A tela de login oferece a opção **Salvar usuário e senha neste navegador**. Se marcada, a extensão guarda as credenciais no armazenamento local do perfil do Chrome; se desmarcada, remove as credenciais salvas após login bem-sucedido.
 - Navega na árvore do VITAI para **EMERGÊNCIA → Pacientes Registrados** e **INTERNAÇÃO → Altas Hospitalares**.
 - Seleciona **Personalizado**, preenche as datas e aciona diretamente **Exportar para Excel**.
 - Datas padrão: terça a domingo, dia anterior completo; segunda-feira, sexta-feira a domingo. As datas continuam editáveis.
@@ -21,11 +21,11 @@ IDs de datasource usados pelo sistema: Emergência `100563`; Internação `10055
 
 1. Atualize a extensão local: abra `chrome://extensions` e clique em **Recarregar**.
 2. Abra a página de controle publicada no Vercel.
-3. Abra o VITAI e faça login normalmente no site oficial. Mantenha a sessão ativa.
-4. Na página de controle, confira as datas e clique em **Baixar os dois relatórios automaticamente**.
-5. Aguarde a mensagem de conclusão e confira os arquivos na pasta de downloads configurada no Chrome.
+3. Na tela de login da aplicação, informe as credenciais do VITAI. Marque **Salvar usuário e senha neste navegador** somente se esse computador e perfil do Chrome forem de uso confiável.
+4. Clique em **Entrar no VITAI**. A extensão abre o VITAI em segundo plano e confirma o login.
+5. Confira as datas e clique em **Baixar os dois relatórios**. Aguarde a confirmação de ambos os downloads.
 
-A automação navega pelos relatórios após o login, mas não preenche usuário/senha e não contorna a autenticação do VITAI. O botão **Aplicar** não é usado; o fluxo preenche os filtros e aciona a exportação do Excel diretamente.
+A extensão preenche os campos de login no próprio VITAI com as credenciais informadas pelo usuário; não contorna a autenticação. As credenciais salvas ficam no armazenamento local da extensão, não no servidor da página. Isso não é o cofre nativo do Gerenciador de senhas do Chrome. O botão **Aplicar** não é usado; o fluxo preenche os filtros e aciona a exportação do Excel diretamente.
 
 ## Limitações conhecidas
 
@@ -42,4 +42,4 @@ A automação navega pelos relatórios após o login, mas não preenche usuário
 
 ## Segurança
 
-Não coloque senhas, cookies de sessão, planilhas reais ou dados identificáveis de pacientes neste repositório. Faça o login manualmente no site oficial. A página de controle não recebe a senha do VITAI.
+Não coloque senhas, cookies de sessão, planilhas reais ou dados identificáveis de pacientes neste repositório. A opção de lembrar credenciais é local ao perfil do Chrome e deve ser usada apenas em computadores confiáveis. Em computadores compartilhados, deixe-a desmarcada.
