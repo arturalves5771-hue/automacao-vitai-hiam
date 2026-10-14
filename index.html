@@ -72,6 +72,8 @@
     button:hover { background: var(--azul-hover); }
     button:disabled { opacity: .6; cursor: not-allowed; }
     .btn-login { width: 100%; }
+    .lembrar-opcao { display: flex; align-items: center; gap: 10px; margin: -2px 0 18px; font-weight: 500; line-height: 1.4; cursor: pointer; }
+    .lembrar-opcao input { width: 17px; height: 17px; margin: 0; flex: 0 0 auto; }
     .login-area { max-width: 450px; margin: auto; }
     .painel { display: none; }
     .painel.visivel { display: block; }
@@ -131,14 +133,18 @@
       <form class="login-area" id="formLogin">
         <h1>Automação VITAI</h1>
         <div class="subtitulo">Acesso ao sistema e exportação dos relatórios utilizados pelo SAME Laudos.</div>
-        <div class="versao">Versão 0.6.7</div>
+        <div class="versao">Versão 0.6.8</div>
         <div class="status" id="statusLogin" role="status" aria-live="polite">🔴 VITAI desconectado</div>
         <label for="usuario">Usuário</label>
         <input type="text" id="usuario" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="Digite seu usuário do VITAI" required>
         <label for="senha">Senha</label>
         <input type="password" id="senha" name="password" autocomplete="current-password" placeholder="Digite sua senha" required>
+        <label class="lembrar-opcao" for="lembrarCredenciais">
+          <input type="checkbox" id="lembrarCredenciais" name="lembrarCredenciais">
+          <span>Salvar usuário e senha neste navegador</span>
+        </label>
         <button type="submit" class="btn-login" id="btnLogin">ENTRAR NO VITAI</button>
-        <div class="nota">O usuário será lembrado nesta página. O Chrome não oferece o salvamento automático da senha neste formulário porque o login acontece em outra guia, no domínio do VITAI. Não guardamos sua senha na aplicação.</div>
+        <div class="nota">Ao marcar a opção, as credenciais ficam no armazenamento local desta extensão neste perfil do Chrome; não são enviadas para o servidor da aplicação. Em computador compartilhado, deixe desmarcado: quem tiver acesso ao seu perfil do Windows/Chrome poderá usar as credenciais salvas.</div>
       </form>
     </section>
 
@@ -197,6 +203,7 @@
     const painel = document.getElementById("painel");
     const usuario = document.getElementById("usuario");
     const senha = document.getElementById("senha");
+    const lembrarCredenciais = document.getElementById("lembrarCredenciais");
     const btnLogin = document.getElementById("btnLogin");
     const statusLogin = document.getElementById("statusLogin");
     const dataInicial = document.getElementById("dataInicial");
@@ -271,6 +278,7 @@
     carregarDatasPadrao();
     carregarUsuarioLocal();
     if (!usuario.value) usuario.focus();
+    window.postMessage({ origem: ORIGEM, type: "VITAI_CREDENCIAIS_CARREGAR" }, location.origin);
 
     formLogin.addEventListener("submit", function(event) {
       event.preventDefault();
@@ -289,13 +297,23 @@
         origem: ORIGEM,
         type: "VITAI_LOGIN_VITAI",
         usuario: user,
-        senha: pass
+        senha: pass,
+        lembrarCredenciais: lembrarCredenciais.checked
       }, location.origin);
     });
 
     window.addEventListener("message", function(event) {
       if (event.source !== window || !event.data || event.data.origem !== "EXTENSAO_VITAI_HIAM") return;
       const resposta = event.data.resposta || {};
+
+      if (event.data.type === "VITAI_CREDENCIAIS_CARREGAR_RESPOSTA") {
+        if (resposta.ok && resposta.credenciais) {
+          usuario.value = resposta.credenciais.usuario || "";
+          senha.value = resposta.credenciais.senha || "";
+          lembrarCredenciais.checked = true;
+        }
+        return;
+      }
 
       if (event.data.type === "VITAI_LOGIN_VITAI_RESPOSTA") {
         btnLogin.disabled = false;
