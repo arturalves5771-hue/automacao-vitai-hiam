@@ -534,18 +534,19 @@ chrome.downloads.onDeterminingFilename.addListener((item, suggest) => {
     const nomeOriginal = String(item.filename || "").split(/[\\/]/).pop();
     const url = String(item.url || "").toLowerCase();
     const idade = pendente ? Date.now() - Number(pendente.criadoEm || 0) : Infinity;
-    const origemVitai = pendente && (
-      Number(item.tabId) === Number(pendente.tabId) ||
-      /(?:https?:\/\/|blob:https?:\/\/)hiam\.vitai\.care\//i.test(url) ||
-      /timedreportexport/i.test(url)
-    );
-    const exportadorConhecido = /^timedreportexport(?:\.xlsx)?$/i.test(nomeOriginal) ||
+    const mesmaAba = pendente && Number(item.tabId) === Number(pendente.tabId);
+    const urlVitai = /https?:\/\/hiam\.vitai\.care\//i.test(url) ||
       /timedreportexport/i.test(url);
-    const excel = /\.xlsx$/i.test(nomeOriginal) || exportadorConhecido;
-    if (pendente && origemVitai && excel && idade >= -1000 && idade < 120000) {
-      // Define o nome final e pede ao Chrome para substituir o arquivo existente.
+    const arquivoExcel = /\.xlsx$/i.test(nomeOriginal) ||
+      /timedreportexport/i.test(url);
+
+    // Durante a exportação, qualquer Excel novo originado da aba do VITAI
+    // recebe o nome esperado. Isso também cobre nomes temporários diferentes.
+    if (pendente && (mesmaAba || urlVitai) && arquivoExcel &&
+        idade >= -1000 && idade < 120000) {
       suggest({ filename: pendente.filename, conflictAction: "overwrite" });
-      chrome.storage.session.remove("pendingDownload");
+      // Não limpar aqui: o download ainda está começando e a espera precisa
+      // continuar associada ao relatório atual. A rotina limpa ao terminar.
     } else {
       suggest();
     }
