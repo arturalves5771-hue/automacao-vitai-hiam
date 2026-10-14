@@ -109,6 +109,9 @@ async function loginEExecutarAmbos(message, sender, sendResponse) {
     sendResponse({ ok: false, erro: "Informe o usuário e a senha do VITAI." });
     return;
   }
+  if (!message.lembrarCredenciais) {
+    await chrome.storage.local.remove("vitaiCredenciaisSalvas");
+  }
 
   const uiTabId = sender && sender.tab && sender.tab.id;
   let aba;
