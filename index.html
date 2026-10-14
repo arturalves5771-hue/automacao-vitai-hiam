@@ -243,9 +243,6 @@
       const faixa = relatorioAtual === 0 ? 50 : 49;
       atualizarProgresso(base + etapaAtual / 100 * faixa, texto, relatorioAtual === 0 ? "Relatório 1 de 2 · Emergência" : "Relatório 2 de 2 · Internação");
     }
-    function salvarUsuarioLocal(valor) { try { localStorage.setItem("vitai_usuario_salvo", valor); } catch (_) {} }
-    function carregarUsuarioLocal() { try { const salvo = localStorage.getItem("vitai_usuario_salvo"); if (salvo) usuario.value = salvo; } catch (_) {} }
-
     function dataLocalISO(data) {
       return data.getFullYear() + "-" + String(data.getMonth() + 1).padStart(2, "0") + "-" + String(data.getDate()).padStart(2, "0");
     }
@@ -276,7 +273,6 @@
     }
 
     carregarDatasPadrao();
-    carregarUsuarioLocal();
     if (!usuario.value) usuario.focus();
     window.postMessage({ origem: ORIGEM, type: "VITAI_CREDENCIAIS_CARREGAR" }, location.origin);
 
@@ -289,7 +285,6 @@
         statusLogin.className = "status erro";
         return;
       }
-      salvarUsuarioLocal(user);
       btnLogin.disabled = true;
       statusLogin.textContent = "🟡 Abrindo o VITAI em segundo plano e verificando o login...";
       statusLogin.className = "status";
