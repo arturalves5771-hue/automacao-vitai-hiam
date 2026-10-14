@@ -9,7 +9,7 @@
     });
     window.addEventListener("message", (event) => {
       if (event.source !== window || !event.data || event.data.origem !== "AUTOMACAO_VITAI_HIAM") return;
-      const tiposPermitidos = new Set(["VITAI_ABRIR_SISTEMA", "VITAI_EXECUTAR_RELATORIO", "VITAI_EXECUTAR_AMBOS", "VITAI_LOGIN_E_EXECUTAR_AMBOS", "VITAI_LOGIN_VITAI"]);
+      const tiposPermitidos = new Set(["VITAI_ABRIR_SISTEMA", "VITAI_EXECUTAR_RELATORIO", "VITAI_EXECUTAR_AMBOS", "VITAI_LOGIN_E_EXECUTAR_AMBOS", "VITAI_LOGIN_VITAI", "VITAI_CREDENCIAIS_CARREGAR"]);
       if (!tiposPermitidos.has(event.data.type)) return;
 
       chrome.runtime.sendMessage({
@@ -18,7 +18,8 @@
         dataInicial: event.data.dataInicial,
         dataFinal: event.data.dataFinal,
         usuario: event.data.usuario,
-        senha: event.data.senha
+        senha: event.data.senha,
+        lembrarCredenciais: event.data.lembrarCredenciais
       }, (resposta) => {
         window.postMessage({
           origem: "EXTENSAO_VITAI_HIAM",
