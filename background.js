@@ -10,6 +10,19 @@ let vitaiTabId = null;
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (!message || !message.type) return;
 
+  if (message.type === "VITAI_CREDENCIAIS_CARREGAR") {
+    chrome.storage.local.get("vitaiCredenciaisSalvas", (dados) => {
+      const credenciais = dados && dados.vitaiCredenciaisSalvas;
+      sendResponse({
+        ok: true,
+        credenciais: credenciais && credenciais.usuario && credenciais.senha
+          ? { usuario: credenciais.usuario, senha: credenciais.senha }
+          : null
+      });
+    });
+    return true;
+  }
+
   if (message.type === "VITAI_ABRIR_SISTEMA") {
     chrome.tabs.create({ url: VITAI_URL, active: false }, (tab) => {
       if (chrome.runtime.lastError) {
@@ -192,8 +205,19 @@ async function loginEExecutarAmbos(message, sender, sendResponse) {
       sendResponse({ ok: false, erro: (statusLogin && statusLogin.erro) || "Não foi possível confirmar o login no VITAI." });
       return;
     }
+    if (message.lembrarCredenciais) {
+      await chrome.storage.local.set({
+        vitaiCredenciaisSalvas: { usuario, senha, salvoEm: Date.now() }
+      });
+    } else {
+      await chrome.storage.local.remove("vitaiCredenciaisSalvas");
+    }
     if (Number.isInteger(uiTabId)) await chrome.tabs.update(uiTabId, { active: true });
-    sendResponse({ ok: true, mensagem: "Login confirmado. O VITAI ficou em segundo plano. Confira o período e clique para baixar os dois relatórios." });
+    sendResponse({
+      ok: true,
+      credenciaisSalvas: !!message.lembrarCredenciais,
+      mensagem: "Login confirmado. O VITAI ficou em segundo plano. Confira o período e clique para baixar os dois relatórios."
+    });
   } catch (erro) {
     sendResponse({ ok: false, erro: erro && erro.message ? erro.message : String(erro) });
   }
@@ -535,7 +559,7 @@ chrome.downloads.onDeterminingFilename.addListener((item, suggest) => {
     const url = String(item.url || "").toLowerCase();
     const idade = pendente ? Date.now() - Number(pendente.criadoEm || 0) : Infinity;
     const mesmaAba = pendente && Number(item.tabId) === Number(pendente.tabId);
-    const urlVitai = /https?:\/\/hiam\.vitai\.care\//i.test(url) ||
+    const urlVitai = /(?:https?:\/\/|blob:https?:\/\/)hiam\.vitai\.care\//i.test(url) ||
       /timedreportexport/i.test(url);
     const arquivoExcel = /\.xlsx$/i.test(nomeOriginal) ||
       /timedreportexport/i.test(url);
